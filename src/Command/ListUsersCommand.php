@@ -45,14 +45,11 @@ class ListUsersCommand extends Command
     public function __construct(
         private MailerInterface $mailer,
         private string $emailSender,
-        private UserRepository $users
+        private UserRepository $users,
     ) {
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     protected function configure(): void
     {
         $this
@@ -133,7 +130,7 @@ HELP
         $email = (new Email())
             ->from($this->emailSender)
             ->to($recipient)
-            ->subject(sprintf('app:list-users report (%s)', date('Y-m-d H:i:s')))
+            ->subject(\sprintf('app:list-users report (%s)', date('Y-m-d H:i:s')))
             ->text($contents);
 
         $this->mailer->send($email);

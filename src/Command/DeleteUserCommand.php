@@ -46,14 +46,11 @@ class DeleteUserCommand extends Command
     public function __construct(
         private EntityManagerInterface $entityManager,
         private Validator $validator,
-        private UserRepository $users
+        private UserRepository $users,
     ) {
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     protected function configure(): void
     {
         $this
@@ -109,7 +106,7 @@ HELP
         $user = $this->users->findOneByUsername($username);
 
         if (null === $user) {
-            throw new RuntimeException(sprintf('User with username "%s" not found.', $username));
+            throw new RuntimeException(\sprintf('User with username "%s" not found.', $username));
         }
 
         // After an entity has been removed its in-memory state is the same
@@ -120,7 +117,7 @@ HELP
         $this->entityManager->remove($user);
         $this->entityManager->flush();
 
-        $this->io->success(sprintf('User "%s" (ID: %d, email: %s) was successfully deleted.', $user->getUsername(), $userId, $user->getEmail()));
+        $this->io->success(\sprintf('User "%s" (ID: %d, email: %s) was successfully deleted.', $user->getUsername(), $userId, $user->getEmail()));
 
         return Command::SUCCESS;
     }

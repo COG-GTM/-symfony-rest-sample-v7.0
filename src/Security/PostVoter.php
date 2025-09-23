@@ -32,9 +32,6 @@ class PostVoter extends Voter
     public const EDIT = 'edit';
     public const SHOW = 'show';
 
-    /**
-     * {@inheritdoc}
-     */
     protected function supports(string $attribute, $subject): bool
     {
         // this voter is only executed for three specific permissions on Post objects
@@ -42,8 +39,6 @@ class PostVoter extends Voter
     }
 
     /**
-     * {@inheritdoc}
-     *
      * @param Post $post
      */
     protected function voteOnAttribute(string $attribute, $post, TokenInterface $token): bool

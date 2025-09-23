@@ -19,7 +19,9 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\PostRepository")
+ *
  * @ORM\Table(name="symfony_demo_post")
+ *
  * @UniqueEntity(fields={"slug"}, errorPath="title", message="post.slug_unique")
  *
  * Defines the properties of the Post entity to represent the blog posts.
@@ -37,7 +39,9 @@ class Post
 {
     /**
      * @ORM\Id
+     *
      * @ORM\GeneratedValue
+     *
      * @ORM\Column(type="integer")
      */
     private ?int $id = null;
@@ -63,8 +67,6 @@ class Post
     private ?string $summary = null;
 
     /**
-     * @var string
-     *
      * @ORM\Column(type="text")
      */
     #[
@@ -80,6 +82,7 @@ class Post
 
     /**
      * @ORM\ManyToOne(targetEntity="App\Entity\User")
+     *
      * @ORM\JoinColumn(nullable=false)
      */
     private ?User $author = null;
@@ -93,6 +96,7 @@ class Post
      *      orphanRemoval=true,
      *      cascade={"persist"}
      * )
+     *
      * @ORM\OrderBy({"publishedAt": "DESC"})
      */
     private Collection $comments;
@@ -101,7 +105,9 @@ class Post
      * @var Tag[]|Collection
      *
      * @ORM\ManyToMany(targetEntity="App\Entity\Tag", cascade={"persist"})
+     *
      * @ORM\JoinTable(name="symfony_demo_post_tag")
+     *
      * @ORM\OrderBy({"name": "ASC"})
      */
     #[Assert\Count(max: 4, maxMessage: 'post.too_many_tags')]
