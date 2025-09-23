@@ -12,11 +12,13 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use function Symfony\Component\String\u;
 use Symfony\Component\Validator\Constraints as Assert;
+
+use function Symfony\Component\String\u;
 
 /**
  * @ORM\Entity
+ *
  * @ORM\Table(name="symfony_demo_comment")
  *
  * Defines the properties of the Comment entity to represent the blog comments.
@@ -32,13 +34,16 @@ class Comment
 {
     /**
      * @ORM\Id
+     *
      * @ORM\GeneratedValue
+     *
      * @ORM\Column(type="integer")
      */
     private ?int $id = null;
 
     /**
      * @ORM\ManyToOne(targetEntity="Post", inversedBy="comments")
+     *
      * @ORM\JoinColumn(nullable=false)
      */
     private ?Post $post = null;
@@ -64,6 +69,7 @@ class Comment
 
     /**
      * @ORM\ManyToOne(targetEntity="App\Entity\User")
+     *
      * @ORM\JoinColumn(nullable=false)
      */
     private ?User $author = null;

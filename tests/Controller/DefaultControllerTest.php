@@ -39,7 +39,7 @@ class DefaultControllerTest extends WebTestCase
         $client = static::createClient();
         $client->request('GET', $url);
 
-        $this->assertResponseIsSuccessful(sprintf('The %s public URL loads correctly.', $url));
+        $this->assertResponseIsSuccessful(\sprintf('The %s public URL loads correctly.', $url));
     }
 
     /**
@@ -54,7 +54,7 @@ class DefaultControllerTest extends WebTestCase
         $client = static::createClient();
         // the service container is always available via the test client
         $blogPost = $client->getContainer()->get('doctrine')->getRepository(Post::class)->find(1);
-        $client->request('GET', sprintf('/en/blog/posts/%s', $blogPost->getSlug()));
+        $client->request('GET', \sprintf('/en/blog/posts/%s', $blogPost->getSlug()));
 
         $this->assertResponseIsSuccessful();
     }
@@ -74,7 +74,7 @@ class DefaultControllerTest extends WebTestCase
         $this->assertResponseRedirects(
             'http://localhost/en/login',
             Response::HTTP_FOUND,
-            sprintf('The %s secure URL redirects to the login form.', $url)
+            \sprintf('The %s secure URL redirects to the login form.', $url)
         );
     }
 

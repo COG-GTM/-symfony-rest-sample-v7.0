@@ -11,11 +11,12 @@
 
 namespace App\Twig;
 
-use function Symfony\Component\String\u;
 use Twig\Environment;
 use Twig\Extension\AbstractExtension;
 use Twig\TemplateWrapper;
 use Twig\TwigFunction;
+
+use function Symfony\Component\String\u;
 
 /**
  * CAUTION: this is an extremely advanced Twig extension. It's used to get the
@@ -35,9 +36,6 @@ class SourceCodeExtension extends AbstractExtension
         $this->controller = $controller;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getFunctions(): array
     {
         return [

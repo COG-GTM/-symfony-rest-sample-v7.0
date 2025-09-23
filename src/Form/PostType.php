@@ -33,13 +33,10 @@ class PostType extends AbstractType
 {
     // Form types are services, so you can inject other services in them if needed
     public function __construct(
-        private SluggerInterface $slugger
+        private SluggerInterface $slugger,
     ) {
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         // For the full reference of options defined by each form field type
@@ -86,9 +83,6 @@ class PostType extends AbstractType
         ;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([

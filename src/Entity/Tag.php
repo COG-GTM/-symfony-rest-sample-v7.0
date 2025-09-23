@@ -15,6 +15,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * @ORM\Entity()
+ *
  * @ORM\Table(name="symfony_demo_tag")
  *
  * Defines the properties of the Tag entity to represent the post tags.
@@ -27,7 +28,9 @@ class Tag implements \JsonSerializable
 {
     /**
      * @ORM\Id
+     *
      * @ORM\GeneratedValue
+     *
      * @ORM\Column(type="integer")
      */
     private ?int $id = null;
@@ -52,9 +55,6 @@ class Tag implements \JsonSerializable
         return $this->name;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function jsonSerialize(): string
     {
         // This entity implements JsonSerializable (http://php.net/manual/en/class.jsonserializable.php)

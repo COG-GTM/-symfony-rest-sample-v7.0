@@ -29,7 +29,7 @@ class CommentNotificationSubscriber implements EventSubscriberInterface
         private MailerInterface $mailer,
         private UrlGeneratorInterface $urlGenerator,
         private TranslatorInterface $translator,
-        private string $sender
+        private string $sender,
     ) {
     }
 
