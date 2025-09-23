@@ -1,18 +1,19 @@
-html_sanitizer:
-    default_sanitizer: 'default'
-    sanitizers:
-        default:
-            # Read https://github.com/tgalopin/html-sanitizer/blob/master/docs/1-getting-started.md#extensions
-            # to learn more about which extensions you would like to enable.
-            extensions:
-                - 'basic'
-                - 'list'
-                - 'table'
-                - 'image'
-                - 'code'
-                # - 'iframe'
-                # - 'details'
-                # - 'extra'
+framework:
+    html_sanitizer:
+        default_sanitizer: 'default'
+        sanitizers:
+            default:
+                # Read https://symfony.com/doc/current/html_sanitizer.html#configuration
+                # to learn more about which extensions you would like to enable.
+                extensions:
+                    - 'basic'
+                    - 'list'
+                    - 'table'
+                    - 'image'
+                    - 'code'
+                    # - 'iframe'
+                    # - 'details'
+                    # - 'extra'
 
-            # Read https://github.com/tgalopin/html-sanitizer/blob/master/docs/3-configuration-reference.md
-            # to discover all the available options for each extension.
+                # Read https://symfony.com/doc/current/html_sanitizer.html#configuration
+                # to discover all the available options for each extension.

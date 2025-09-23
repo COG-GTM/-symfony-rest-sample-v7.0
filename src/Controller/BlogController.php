@@ -18,9 +18,9 @@ use App\Form\CommentType;
 use App\Repository\PostRepository;
 use App\Repository\TagRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Cache;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
+use Symfony\Component\Cache\Annotation\Cache;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -93,7 +93,7 @@ class BlogController extends AbstractController
      */
     #[Route('/comment/{postSlug}/new', methods: ['POST'], name: 'comment_new')]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
-    #[ParamConverter('post', options: ['mapping' => ['postSlug' => 'slug']])]
+    #[MapEntity(mapping: ['postSlug' => 'slug'])]
     public function commentNew(Request $request, Post $post, EventDispatcherInterface $eventDispatcher, EntityManagerInterface $entityManager): Response
     {
         $comment = new Comment();
