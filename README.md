@@ -1,6 +1,8 @@
 Symfony Demo Application
 ========================
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=COG-GTM_-symfony-rest-sample-v7.0&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=COG-GTM_-symfony-rest-sample-v7.0)
+
 The "Symfony Demo Application" is a reference application created to show how
 to develop applications following the [Symfony Best Practices][1].
 
