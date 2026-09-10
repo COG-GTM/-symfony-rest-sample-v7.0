@@ -30,6 +30,11 @@ class SourceCodeExtension extends AbstractExtension
 {
     private $controller;
 
+    public function __construct(
+        private bool $debug,
+    ) {
+    }
+
     public function setController(?callable $controller): void
     {
         $this->controller = $controller;
@@ -50,6 +55,11 @@ class SourceCodeExtension extends AbstractExtension
      */
     public function showSourceCode(Environment $twig, $template): string
     {
+        // source code is only disclosed when debug mode is enabled (never in 'prod')
+        if (!$this->debug) {
+            return '';
+        }
+
         return $twig->render('debug/source_code.html.twig', [
             'controller' => $this->getController(),
             'template' => $this->getTemplateSource($twig->resolveTemplate($template)),
