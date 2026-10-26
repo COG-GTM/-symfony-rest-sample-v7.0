@@ -83,6 +83,46 @@ class BlogControllerTest extends WebTestCase
         $this->assertSame('Hi, Symfony!', $newComment);
     }
 
+    public function testNewCommentNotificationLinkUsesSiteUri(): void
+    {
+        $client = static::createClient([], [
+            'PHP_AUTH_USER' => 'john_user',
+            'PHP_AUTH_PW' => 'kitten',
+        ]);
+
+        $crawler = $client->request('GET', '/en/blog/');
+        $client->click($crawler->filter('article.post > h2 a')->link());
+        $client->submitForm('Publish comment', [
+            'comment[content]' => 'Hi, Symfony!',
+        ]);
+
+        $this->assertResponseRedirects();
+        $this->assertEmailCount(1);
+        $this->assertMatchesRegularExpression(
+            '{href="http://localhost:8000/en/blog/posts/[^"#]+#comment_\d+"}',
+            $this->getMailerMessage()->getHtmlBody()
+        );
+    }
+
+    public function testNewCommentWithForgedHostIsRejected(): void
+    {
+        $client = static::createClient([], [
+            'PHP_AUTH_USER' => 'john_user',
+            'PHP_AUTH_PW' => 'kitten',
+        ]);
+
+        $crawler = $client->request('GET', '/en/blog/');
+        $postUri = $crawler->filter('article.post > h2 a')->link()->getUri();
+        $slug = basename(parse_url($postUri, \PHP_URL_PATH));
+
+        $client->request('POST', 'http://acme-blog.evil.example/en/blog/comment/'.$slug.'/new', [
+            'comment' => ['content' => 'Hi, Symfony!'],
+        ]);
+
+        $this->assertResponseStatusCodeSame(400);
+        $this->assertEmailCount(0);
+    }
+
     public function testAjaxSearch(): void
     {
         $client = static::createClient();

@@ -16,6 +16,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Routing\RequestContext;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
@@ -29,7 +30,8 @@ class CommentNotificationSubscriber implements EventSubscriberInterface
         private MailerInterface $mailer,
         private UrlGeneratorInterface $urlGenerator,
         private TranslatorInterface $translator,
-        private string $sender
+        private string $sender,
+        private string $defaultUri
     ) {
     }
 
@@ -45,10 +47,22 @@ class CommentNotificationSubscriber implements EventSubscriberInterface
         $comment = $event->getComment();
         $post = $comment->getPost();
 
-        $linkToPost = $this->urlGenerator->generate('blog_post', [
-            'slug' => $post->getSlug(),
-            '_fragment' => 'comment_'.$comment->getId(),
-        ], UrlGeneratorInterface::ABSOLUTE_URL);
+        // The link must not be built from the current request context: its scheme
+        // and host come from the commenter's (attacker controllable) Host header.
+        $requestContext = $this->urlGenerator->getContext();
+        $siteContext = RequestContext::fromUri($this->defaultUri);
+        $siteContext->setParameters($requestContext->getParameters());
+
+        $this->urlGenerator->setContext($siteContext);
+
+        try {
+            $linkToPost = $this->urlGenerator->generate('blog_post', [
+                'slug' => $post->getSlug(),
+                '_fragment' => 'comment_'.$comment->getId(),
+            ], UrlGeneratorInterface::ABSOLUTE_URL);
+        } finally {
+            $this->urlGenerator->setContext($requestContext);
+        }
 
         $subject = $this->translator->trans('notification.comment_created');
         $body = $this->translator->trans('notification.comment_created.description', [
