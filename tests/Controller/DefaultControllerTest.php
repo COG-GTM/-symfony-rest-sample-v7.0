@@ -108,6 +108,9 @@ class DefaultControllerTest extends WebTestCase
         $this->assertSelectorExists('#sourceCodeModal');
     }
 
+    /**
+     * @return \Generator<array{string, int}>
+     */
     public function getSourceCodeUrls(): \Generator
     {
         yield ['/en/blog/', Response::HTTP_OK];

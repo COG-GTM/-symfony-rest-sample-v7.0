@@ -58,7 +58,7 @@ class SourceCodeExtensionTest extends TestCase
         $twig = new Environment(new ArrayLoader([
             'debug/source_code.html.twig' => 'controller_path={{ controller.file_path }} {{ controller.source_code }} {{ template.source_code }}',
             'page.html.twig' => '<aside>{{ show_source_code(_self) }}</aside>',
-        ]), ['strict_variables' => true, 'autoescape' => false]);
+        ]), ['debug' => true, 'strict_variables' => true, 'autoescape' => false]);
         $twig->addExtension($extension);
 
         return $twig;
