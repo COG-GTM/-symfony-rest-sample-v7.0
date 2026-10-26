@@ -13,6 +13,7 @@ namespace App\Tests\Controller;
 
 use App\Entity\Post;
 use App\Pagination\Paginator;
+use App\Repository\PostRepository;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
@@ -94,5 +95,30 @@ class BlogControllerTest extends WebTestCase
         $this->assertCount(1, $results);
         $this->assertSame('Lorem ipsum dolor sit amet consectetur adipiscing elit', $results[0]['title']);
         $this->assertSame('Jane Doe', $results[0]['author']);
+    }
+
+    public function testAjaxSearchClampsResultLimit(): void
+    {
+        $client = static::createClient();
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => 'lorem ipsum dolor sit amet consectetur adipiscing elit', 'l' => 100000]);
+
+        $this->assertResponseIsSuccessful();
+        $results = json_decode($client->getResponse()->getContent(), true);
+        $this->assertLessThanOrEqual(PostRepository::MAX_SEARCH_RESULTS, \count($results));
+
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => 'lorem', 'l' => -5]);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertCount(1, json_decode($client->getResponse()->getContent(), true));
+    }
+
+    public function testAjaxSearchIgnoresTermsBeyondLimit(): void
+    {
+        $client = static::createClient();
+        $fillerTerms = array_map(static fn (int $i): string => 'zz'.$i, range(1, PostRepository::MAX_SEARCH_TERMS));
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => implode(' ', $fillerTerms).' lorem']);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSame([], json_decode($client->getResponse()->getContent(), true));
     }
 }
