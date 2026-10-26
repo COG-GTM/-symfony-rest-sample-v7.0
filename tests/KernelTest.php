@@ -23,7 +23,10 @@ use Symfony\Component\Dotenv\Dotenv;
  */
 class KernelTest extends TestCase
 {
+    /** @var array<string, mixed> */
     private array $originalServer;
+
+    /** @var array<string, mixed> */
     private array $originalEnv;
 
     protected function setUp(): void
@@ -85,11 +88,14 @@ class KernelTest extends TestCase
             $secret = $values['APP_SECRET'] ?? '';
 
             if ('' !== $secret) {
-                $this->assertContains($secret, Kernel::PUBLIC_SECRETS, sprintf('The APP_SECRET committed in %s must be listed in Kernel::PUBLIC_SECRETS.', $file));
+                $this->assertContains($secret, Kernel::PUBLIC_SECRETS, \sprintf('The APP_SECRET committed in %s must be listed in Kernel::PUBLIC_SECRETS.', $file));
             }
         }
     }
 
+    /**
+     * @return \Generator<string, array{string}>
+     */
     public function getUnsafeSecrets(): \Generator
     {
         yield 'empty' => [''];
