@@ -44,6 +44,23 @@ If you don't have the Symfony binary installed, run `php -S localhost:8000 -t pu
 to use the built-in PHP web server or [configure a web server][3] like Nginx or
 Apache to run the application.
 
+### Application secret
+
+`APP_SECRET` signs URIs, CSRF tokens and remember-me cookies, so it must never
+be committed. The value in `.env` is intentionally empty; `.env.dev` and
+`.env.test` hold throwaway values that are only loaded in those environments.
+In every other environment (e.g. `APP_ENV=prod`) generate a unique value and
+provide it as a real environment variable, in `.env.local` or via the
+[secrets vault][5]:
+
+```bash
+$ php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'
+```
+
+The kernel refuses to boot outside `dev`/`test` when `APP_SECRET` is empty or
+one of the publicly known values listed in `App\Kernel::PUBLIC_SECRETS`. Any
+deployment that ever ran with the previously committed value must rotate it.
+
 Tests
 -----
 
@@ -58,3 +75,4 @@ $ ./bin/phpunit
 [2]: https://symfony.com/doc/current/reference/requirements.html
 [3]: https://symfony.com/doc/current/cookbook/configuration/web_server_configuration.html
 [4]: https://symfony.com/download
+[5]: https://symfony.com/doc/current/configuration/secrets.html
