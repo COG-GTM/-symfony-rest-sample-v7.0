@@ -14,9 +14,11 @@ declare(strict_types=1);
 namespace App\Tests\Command;
 
 use App\Command\CheckDefaultCredentialsCommand;
+use App\Entity\User;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class CheckDefaultCredentialsCommandTest extends AbstractCommandTest
 {
@@ -31,9 +33,18 @@ class CheckDefaultCredentialsCommandTest extends AbstractCommandTest
     {
         self::bootKernel();
         $container = static::getContainer();
-        $user = $container->get(UserRepository::class)->findOneBy(['username' => 'tom_admin']);
-        $user->setPassword($container->get('test.user_password_hasher')->hashPassword($user, 'kitten'));
-        $container->get(EntityManagerInterface::class)->flush();
+        $users = $container->get(UserRepository::class);
+        $this->assertInstanceOf(UserRepository::class, $users);
+        $user = $users->findOneBy(['username' => 'tom_admin']);
+        $this->assertInstanceOf(User::class, $user);
+
+        $hasher = $container->get('test.user_password_hasher');
+        $this->assertInstanceOf(UserPasswordHasherInterface::class, $hasher);
+        $user->setPassword($hasher->hashPassword($user, 'kitten'));
+
+        $entityManager = $container->get(EntityManagerInterface::class);
+        $this->assertInstanceOf(EntityManagerInterface::class, $entityManager);
+        $entityManager->flush();
 
         $tester = $this->executeCommand([]);
 

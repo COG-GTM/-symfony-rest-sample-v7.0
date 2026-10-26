@@ -13,11 +13,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Entity\User;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class SecurityControllerTest extends WebTestCase
 {
@@ -73,6 +75,9 @@ class SecurityControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
     }
 
+    /**
+     * @return \Generator<int, array{string}>
+     */
     public function getDemoAccounts(): \Generator
     {
         yield ['jane_admin'];
@@ -94,10 +99,17 @@ class SecurityControllerTest extends WebTestCase
     private function storeDemoPassword(string $username): void
     {
         $container = static::getContainer();
-        $user = $container->get(UserRepository::class)->findOneBy(['username' => $username]);
-        $this->assertNotNull($user);
+        $users = $container->get(UserRepository::class);
+        $this->assertInstanceOf(UserRepository::class, $users);
+        $user = $users->findOneBy(['username' => $username]);
+        $this->assertInstanceOf(User::class, $user);
 
-        $user->setPassword($container->get('test.user_password_hasher')->hashPassword($user, 'kitten'));
-        $container->get(EntityManagerInterface::class)->flush();
+        $hasher = $container->get('test.user_password_hasher');
+        $this->assertInstanceOf(UserPasswordHasherInterface::class, $hasher);
+        $user->setPassword($hasher->hashPassword($user, 'kitten'));
+
+        $entityManager = $container->get(EntityManagerInterface::class);
+        $this->assertInstanceOf(EntityManagerInterface::class, $entityManager);
+        $entityManager->flush();
     }
 }
