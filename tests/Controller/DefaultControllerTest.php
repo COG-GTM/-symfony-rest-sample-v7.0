@@ -14,6 +14,7 @@ namespace App\Tests\Controller;
 use App\Entity\Post;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\UriSigner;
 
 /**
  * Functional test that implements a "smoke test" of all the public and secure
@@ -76,6 +77,36 @@ class DefaultControllerTest extends WebTestCase
             Response::HTTP_FOUND,
             sprintf('The %s secure URL redirects to the login form.', $url)
         );
+    }
+
+    /**
+     * The /_fragment endpoint executes the controller named in its signed
+     * "_path" query parameter, so it must not be reachable from remote clients
+     * even when the request carries a valid signature.
+     */
+    public function testSignedFragmentIsNotPubliclyAccessible(): void
+    {
+        $client = static::createClient();
+        $uri = static::getContainer()->get('uri_signer')->sign('http://localhost/_fragment?_path='.rawurlencode('_controller=phpinfo'));
+
+        $client->request('GET', $uri, [], [], ['REMOTE_ADDR' => '203.0.113.10']);
+
+        $this->assertResponseRedirects('http://localhost/en/login');
+        $this->assertStringNotContainsString('phpinfo()', (string) $client->getResponse()->getContent());
+    }
+
+    /**
+     * Fragment URLs signed with the APP_SECRET that used to be committed in
+     * .env must be rejected.
+     */
+    public function testFragmentSignedWithPreviouslyCommittedSecretIsRejected(): void
+    {
+        $client = static::createClient();
+        $uri = (new UriSigner('2ca64f8d83b9e89f5f19d672841d6bb8'))->sign('http://localhost/_fragment?_path='.rawurlencode('_controller=phpinfo'));
+
+        $client->request('GET', $uri);
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
     }
 
     public function getPublicUrls(): ?\Generator
