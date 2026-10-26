@@ -34,6 +34,10 @@ services:
     App\EventSubscriber\CommentNotificationSubscriber:
         $sender: '%app.notifications.email_sender%'
 
+    App\EventSubscriber\AppSecretGuardSubscriber:
+        $secret: '%kernel.secret%'
+        $environment: '%kernel.environment%'
+
 when@test:
     services:
         test.user_password_hasher:
