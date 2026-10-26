@@ -30,7 +30,11 @@ class FragmentControllerTest extends WebTestCase
     public function testSignedFragmentRequestIsNotExecuted(?string $secret): void
     {
         $client = static::createClient();
-        $secret ??= (string) static::getContainer()->getParameter('kernel.secret');
+        if (null === $secret) {
+            $kernelSecret = static::getContainer()->getParameter('kernel.secret');
+            \assert(\is_string($kernelSecret));
+            $secret = $kernelSecret;
+        }
 
         $uri = (new UriSigner($secret))->sign('http://localhost/_fragment?_path='.rawurlencode('_controller=phpinfo'));
         $client->request('GET', $uri);
@@ -48,6 +52,9 @@ class FragmentControllerTest extends WebTestCase
         $this->assertGreaterThan(0, $crawler->filter('#sidebar .section.about')->count(), 'The sidebar "about" fragment is rendered inline.');
     }
 
+    /**
+     * @return \Generator<string, array{?string}>
+     */
     public function getSigningSecrets(): \Generator
     {
         yield 'kernel secret' => [null];
