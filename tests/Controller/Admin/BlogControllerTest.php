@@ -39,7 +39,7 @@ class BlogControllerTest extends WebTestCase
     {
         $client = static::createClient([], [
             'PHP_AUTH_USER' => 'john_user',
-            'PHP_AUTH_PW' => 'kitten',
+            'PHP_AUTH_PW' => $_SERVER['APP_FIXTURES_PASSWORD'],
         ]);
 
         $client->request($httpMethod, $url);
@@ -59,7 +59,7 @@ class BlogControllerTest extends WebTestCase
     {
         $client = static::createClient([], [
             'PHP_AUTH_USER' => 'jane_admin',
-            'PHP_AUTH_PW' => 'kitten',
+            'PHP_AUTH_PW' => $_SERVER['APP_FIXTURES_PASSWORD'],
         ]);
         $client->request('GET', '/en/admin/post/');
 
@@ -84,7 +84,7 @@ class BlogControllerTest extends WebTestCase
 
         $client = static::createClient([], [
             'PHP_AUTH_USER' => 'jane_admin',
-            'PHP_AUTH_PW' => 'kitten',
+            'PHP_AUTH_PW' => $_SERVER['APP_FIXTURES_PASSWORD'],
         ]);
         $client->request('GET', '/en/admin/post/new');
         $client->submitForm('Create post', [
@@ -110,7 +110,7 @@ class BlogControllerTest extends WebTestCase
 
         $client = static::createClient([], [
             'PHP_AUTH_USER' => 'jane_admin',
-            'PHP_AUTH_PW' => 'kitten',
+            'PHP_AUTH_PW' => $_SERVER['APP_FIXTURES_PASSWORD'],
         ]);
         $crawler = $client->request('GET', '/en/admin/post/new');
         $form = $crawler->selectButton('Create post')->form([
@@ -131,7 +131,7 @@ class BlogControllerTest extends WebTestCase
     {
         $client = static::createClient([], [
             'PHP_AUTH_USER' => 'jane_admin',
-            'PHP_AUTH_PW' => 'kitten',
+            'PHP_AUTH_PW' => $_SERVER['APP_FIXTURES_PASSWORD'],
         ]);
         $client->request('GET', '/en/admin/post/1');
 
@@ -150,7 +150,7 @@ class BlogControllerTest extends WebTestCase
 
         $client = static::createClient([], [
             'PHP_AUTH_USER' => 'jane_admin',
-            'PHP_AUTH_PW' => 'kitten',
+            'PHP_AUTH_PW' => $_SERVER['APP_FIXTURES_PASSWORD'],
         ]);
         $client->request('GET', '/en/admin/post/1/edit');
         $client->submitForm('Save changes', [
@@ -174,7 +174,7 @@ class BlogControllerTest extends WebTestCase
     {
         $client = static::createClient([], [
             'PHP_AUTH_USER' => 'jane_admin',
-            'PHP_AUTH_PW' => 'kitten',
+            'PHP_AUTH_PW' => $_SERVER['APP_FIXTURES_PASSWORD'],
         ]);
         $crawler = $client->request('GET', '/en/admin/post/1');
         $client->submit($crawler->filter('#delete-form')->form());

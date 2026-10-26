@@ -27,6 +27,25 @@ Alternatively, you can use Composer:
 $ composer create-project symfony/symfony-demo my_project
 ```
 
+Database
+--------
+
+The SQLite databases in `data/` are not committed. Create the database and,
+for local development only, load the sample data:
+
+```bash
+$ cd my_project/
+$ php bin/console doctrine:schema:create
+$ APP_FIXTURES_PASSWORD=<choose-a-password> php bin/console doctrine:fixtures:load
+```
+
+The fixtures create the `jane_admin`, `tom_admin` (`ROLE_ADMIN`) and
+`john_user` (`ROLE_USER`) accounts with the password given in
+`APP_FIXTURES_PASSWORD` (you can also set it in `.env.local`). If it's not set,
+each account gets a random password that is never displayed; create your own
+user with `php bin/console app:add-user`. Never load the fixtures into a
+database that is exposed to real users.
+
 Usage
 -----
 
@@ -51,6 +70,8 @@ Execute this command to run tests:
 
 ```bash
 $ cd my_project/
+$ php bin/console doctrine:schema:create --env=test
+$ php bin/console doctrine:fixtures:load --env=test --no-interaction
 $ ./bin/phpunit
 ```
 

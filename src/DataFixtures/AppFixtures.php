@@ -25,7 +25,8 @@ class AppFixtures extends Fixture
 {
     public function __construct(
         private UserPasswordHasherInterface $passwordHasher,
-        private SluggerInterface $slugger
+        private SluggerInterface $slugger,
+        private ?string $userPassword = null
     ) {
     }
 
@@ -38,11 +39,11 @@ class AppFixtures extends Fixture
 
     private function loadUsers(ObjectManager $manager): void
     {
-        foreach ($this->getUserData() as [$fullname, $username, $password, $email, $roles]) {
+        foreach ($this->getUserData() as [$fullname, $username, $email, $roles]) {
             $user = new User();
             $user->setFullName($fullname);
             $user->setUsername($username);
-            $user->setPassword($this->passwordHasher->hashPassword($user, $password));
+            $user->setPassword($this->passwordHasher->hashPassword($user, $this->getUserPassword()));
             $user->setEmail($email);
             $user->setRoles($roles);
 
@@ -96,11 +97,24 @@ class AppFixtures extends Fixture
     private function getUserData(): array
     {
         return [
-            // $userData = [$fullname, $username, $password, $email, $roles];
-            ['Jane Doe', 'jane_admin', 'kitten', 'jane_admin@symfony.com', ['ROLE_ADMIN']],
-            ['Tom Doe', 'tom_admin', 'kitten', 'tom_admin@symfony.com', ['ROLE_ADMIN']],
-            ['John Doe', 'john_user', 'kitten', 'john_user@symfony.com', ['ROLE_USER']],
+            // $userData = [$fullname, $username, $email, $roles];
+            ['Jane Doe', 'jane_admin', 'jane_admin@symfony.com', ['ROLE_ADMIN']],
+            ['Tom Doe', 'tom_admin', 'tom_admin@symfony.com', ['ROLE_ADMIN']],
+            ['John Doe', 'john_user', 'john_user@symfony.com', ['ROLE_USER']],
         ];
+    }
+
+    /**
+     * Fixture users get the password configured in the APP_FIXTURES_PASSWORD
+     * env var or, when it's not set, a random password that is never displayed.
+     */
+    private function getUserPassword(): string
+    {
+        if (null !== $this->userPassword && '' !== $this->userPassword) {
+            return $this->userPassword;
+        }
+
+        return bin2hex(random_bytes(16));
     }
 
     private function getTagData(): array

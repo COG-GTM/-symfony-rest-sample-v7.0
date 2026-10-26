@@ -65,5 +65,10 @@ jobs:
             - name: "PHPUnit version"
               run: vendor/bin/simple-phpunit --version
 
+            - name: "Create the test database"
+              run: |
+                  php bin/console doctrine:schema:create --env=test --no-interaction
+                  php bin/console doctrine:fixtures:load --env=test --no-interaction
+
             - name: "Run tests"
               run: vendor/bin/simple-phpunit ${{ env.PHPUNIT_FLAGS }}
