@@ -24,6 +24,8 @@ use function Symfony\Component\String\u;
 
 class AppFixtures extends Fixture
 {
+    private const MIN_PASSWORD_LENGTH = 12;
+
     public function __construct(
         private UserPasswordHasherInterface $passwordHasher,
         private SluggerInterface $slugger,
@@ -117,6 +119,13 @@ class AppFixtures extends Fixture
 
         if (DefaultCredentials::isDefaultPassword($this->userPassword)) {
             throw new \InvalidArgumentException('APP_FIXTURES_PASSWORD must not be a well-known demo password.');
+        }
+
+        if (mb_strlen($this->userPassword) < self::MIN_PASSWORD_LENGTH) {
+            throw new \InvalidArgumentException(sprintf(
+                'APP_FIXTURES_PASSWORD must be at least %d characters long.',
+                self::MIN_PASSWORD_LENGTH
+            ));
         }
 
         return $this->userPassword;

@@ -55,6 +55,13 @@ class AppFixturesTest extends TestCase
         $this->loadUserPasswords('kitten');
     }
 
+    public function testShortPasswordIsRefused(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $this->loadUserPasswords('password1');
+    }
+
     /**
      * @return array<string, string> plain passwords indexed by username
      */
