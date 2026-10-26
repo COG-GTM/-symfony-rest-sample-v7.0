@@ -57,6 +57,10 @@ jobs:
             - name: "Require symfony/flex"
               run: composer global require --no-progress --no-scripts --no-plugins symfony/flex
 
+            - name: "Generate APP_SECRET"
+              shell: bash
+              run: php -r "echo 'APP_SECRET='.bin2hex(random_bytes(32)).PHP_EOL;" > .env.local
+
             - run: composer update
 
             - name: "Install PHPUnit"
