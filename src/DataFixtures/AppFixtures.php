@@ -122,10 +122,9 @@ class AppFixtures extends Fixture
         }
 
         if (mb_strlen($this->userPassword) < self::MIN_PASSWORD_LENGTH) {
-            throw new \InvalidArgumentException(sprintf(
-                'APP_FIXTURES_PASSWORD must be at least %d characters long.',
-                self::MIN_PASSWORD_LENGTH
-            ));
+            $message = sprintf('APP_FIXTURES_PASSWORD must be at least %d characters long.', self::MIN_PASSWORD_LENGTH);
+
+            throw new \InvalidArgumentException($message);
         }
 
         return $this->userPassword;

@@ -100,16 +100,16 @@ class SecurityControllerTest extends WebTestCase
     {
         $container = static::getContainer();
         $users = $container->get(UserRepository::class);
-        $this->assertInstanceOf(UserRepository::class, $users);
+        \assert($users instanceof UserRepository);
         $user = $users->findOneBy(['username' => $username]);
-        $this->assertInstanceOf(User::class, $user);
+        \assert($user instanceof User);
 
         $hasher = $container->get('test.user_password_hasher');
-        $this->assertInstanceOf(UserPasswordHasherInterface::class, $hasher);
+        \assert($hasher instanceof UserPasswordHasherInterface);
         $user->setPassword($hasher->hashPassword($user, 'kitten'));
 
         $entityManager = $container->get(EntityManagerInterface::class);
-        $this->assertInstanceOf(EntityManagerInterface::class, $entityManager);
+        \assert($entityManager instanceof EntityManagerInterface);
         $entityManager->flush();
     }
 }
