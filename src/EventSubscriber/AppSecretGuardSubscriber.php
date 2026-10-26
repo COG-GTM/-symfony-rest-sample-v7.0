@@ -30,7 +30,7 @@ class AppSecretGuardSubscriber implements EventSubscriberInterface
     ];
 
     public function __construct(
-        private string $kernelSecret
+        private string $kernelSecret,
     ) {
     }
 
