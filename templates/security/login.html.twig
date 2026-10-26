@@ -30,7 +30,7 @@
                             <input type="password" id="password" name="_password" class="form-control" {{ stimulus_target('login', 'password') }} />
                         </div>
                         <button class="btn btn-primary pull-right" type="button" {{ stimulus_action('login', 'togglePasswordInputType') }}><i class="fa fa-eye"></i></button>
-                        <input type="hidden" name="_target_path" value="{{ app.request.get('redirect_to') }}"/>
+                        <input type="hidden" name="_target_path" value="{{ target_path }}"/>
                         <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}"/>
                         <button type="submit" class="btn btn-primary">
                             <i class="fa fa-sign-in" aria-hidden="true"></i> {{ 'action.sign_in'|trans }}
