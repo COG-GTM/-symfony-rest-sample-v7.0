@@ -26,7 +26,7 @@ class AppFixtures extends Fixture
     public function __construct(
         private UserPasswordHasherInterface $passwordHasher,
         private SluggerInterface $slugger,
-        private ?string $userPassword = null
+        private ?string $userPassword = null,
     ) {
     }
 
