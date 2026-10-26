@@ -88,7 +88,9 @@ class DefaultControllerTest extends WebTestCase
     {
         $client = static::createClient();
         $signer = static::getContainer()->get('uri_signer');
-        $this->assertInstanceOf(UriSigner::class, $signer);
+        if (!$signer instanceof UriSigner) {
+            $this->fail('The uri_signer service is not available.');
+        }
         $uri = $signer->sign('http://localhost/_fragment?_path='.rawurlencode('_controller=phpinfo'));
 
         $client->request('GET', $uri, [], [], ['REMOTE_ADDR' => '203.0.113.10']);
