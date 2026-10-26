@@ -9,4 +9,6 @@ framework:
 when@prod:
     framework:
         router:
-            strict_requirements: null
+            # false (instead of null) still validates route requirements when generating
+            # URLs, but logs and returns an empty string instead of throwing an exception.
+            strict_requirements: false

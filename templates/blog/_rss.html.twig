@@ -1,5 +1,5 @@
 <div class="section rss">
-    <a href="{{ path('blog_rss', app.request.query.all) }}">
+    <a href="{{ path('blog_rss', {tag: app.request.query.get('tag')}) }}">
         <i class="fa fa-rss" aria-hidden="true"></i> {{ 'menu.rss'|trans }}
     </a>
 </div>
