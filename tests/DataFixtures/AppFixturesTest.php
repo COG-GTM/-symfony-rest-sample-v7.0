@@ -52,7 +52,7 @@ class AppFixturesTest extends TestCase
      */
     private function loadUserPasswords(?string $configuredPassword): array
     {
-        $hasher = new class implements UserPasswordHasherInterface {
+        $hasher = new class() implements UserPasswordHasherInterface {
             public function hashPassword(PasswordAuthenticatedUserInterface $user, string $plainPassword): string
             {
                 return 'plain:'.$plainPassword;
@@ -74,7 +74,7 @@ class AppFixturesTest extends TestCase
         $manager->method('getUnitOfWork')->willReturn($this->createMock(UnitOfWork::class));
         $manager->method('persist')->willReturnCallback(static function (object $entity) use (&$passwords): void {
             if ($entity instanceof User) {
-                $passwords[$entity->getUsername()] = mb_substr($entity->getPassword(), mb_strlen('plain:'));
+                $passwords[$entity->getUsername()] = mb_substr((string) $entity->getPassword(), mb_strlen('plain:'));
             }
         });
 

@@ -25,7 +25,7 @@ class SecurityControllerTest extends WebTestCase
         $this->assertCount(1, $crawler->filter('form input[name="_password"]'));
         $this->assertCount(0, $crawler->filter('#login-help table'));
 
-        $content = $client->getResponse()->getContent();
+        $content = (string) $client->getResponse()->getContent();
         $this->assertStringNotContainsString('kitten', $content);
         $this->assertStringNotContainsString($_SERVER['APP_FIXTURES_PASSWORD'], $content);
         $this->assertStringNotContainsString('jane_admin', $content);
