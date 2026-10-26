@@ -14,6 +14,7 @@ namespace App\Tests\Controller;
 use App\Entity\Post;
 use App\Pagination\Paginator;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\Mime\Email;
 
 /**
  * Functional test for the controllers defined inside BlogController.
@@ -81,6 +82,50 @@ class BlogControllerTest extends WebTestCase
         $newComment = $crawler->filter('.post-comment')->first()->filter('div > p')->text();
 
         $this->assertSame('Hi, Symfony!', $newComment);
+    }
+
+    public function testNewCommentNotificationLinkUsesSiteUri(): void
+    {
+        $client = static::createClient([], [
+            'PHP_AUTH_USER' => 'john_user',
+            'PHP_AUTH_PW' => 'kitten',
+            'HTTP_HOST' => '127.0.0.1:8080',
+        ]);
+
+        $crawler = $client->request('GET', '/en/blog/');
+        $client->click($crawler->filter('article.post > h2 a')->link());
+        $client->submitForm('Publish comment', [
+            'comment[content]' => 'Hi, Symfony!',
+        ]);
+
+        $this->assertResponseRedirects();
+        $this->assertEmailCount(1);
+        $email = $this->getMailerMessage();
+        \assert($email instanceof Email);
+        $this->assertMatchesRegularExpression(
+            '{href="http://localhost:8000/en/blog/posts/[^"#]+#comment_\\d+"}',
+            (string) $email->getHtmlBody()
+        );
+    }
+
+    public function testNewCommentWithUntrustedHostIsRejected(): void
+    {
+        $client = static::createClient([], [
+            'PHP_AUTH_USER' => 'john_user',
+            'PHP_AUTH_PW' => 'kitten',
+        ]);
+
+        $crawler = $client->request('GET', '/en/blog/');
+        $postPath = (string) parse_url($crawler->filter('article.post > h2 a')->link()->getUri(), \PHP_URL_PATH);
+        $crawler = $client->request('GET', $postPath);
+        $token = $crawler->filter('#comment__token')->attr('value');
+
+        $client->request('POST', 'http://acme-blog-login.example/en/blog/comment/'.basename($postPath).'/new', [
+            'comment' => ['content' => 'Hi, Symfony!', '_token' => $token],
+        ]);
+
+        $this->assertResponseStatusCodeSame(400);
+        $this->assertEmailCount(0);
     }
 
     public function testAjaxSearch(): void
