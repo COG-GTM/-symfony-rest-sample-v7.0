@@ -138,6 +138,8 @@ class BlogController extends AbstractController
      */
     public function commentForm(Post $post): Response
     {
+        $this->denyAccessUnlessPublished($post);
+
         $form = $this->createForm(CommentType::class);
 
         return $this->render('blog/_comment_form.html.twig', [
