@@ -34,6 +34,10 @@ services:
     App\EventSubscriber\CommentNotificationSubscriber:
         $sender: '%app.notifications.email_sender%'
 
+    # the source code of controllers and templates is only shown in debug mode
+    App\Twig\SourceCodeExtension:
+        $debug: '%kernel.debug%'
+
 when@test:
     services:
         test.user_password_hasher:
