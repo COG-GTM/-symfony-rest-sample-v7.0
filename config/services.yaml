@@ -34,6 +34,9 @@ services:
     App\EventSubscriber\CommentNotificationSubscriber:
         $sender: '%app.notifications.email_sender%'
 
+    App\DataFixtures\AppFixtures:
+        $userPassword: '%env(default::APP_FIXTURES_PASSWORD)%'
+
 when@test:
     services:
         test.user_password_hasher:
