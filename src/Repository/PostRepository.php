@@ -66,15 +66,17 @@ class PostRepository extends ServiceEntityRepository
         }
 
         $queryBuilder = $this->createQueryBuilder('p');
+        $titleMatches = $queryBuilder->expr()->orX();
 
         foreach ($searchTerms as $key => $term) {
-            $queryBuilder
-                ->orWhere('p.title LIKE :t_'.$key)
-                ->setParameter('t_'.$key, '%'.$term.'%')
-            ;
+            $titleMatches->add('p.title LIKE :t_'.$key);
+            $queryBuilder->setParameter('t_'.$key, '%'.$term.'%');
         }
 
         return $queryBuilder
+            ->where($titleMatches)
+            ->andWhere('p.publishedAt <= :now')
+            ->setParameter('now', new \DateTime())
             ->orderBy('p.publishedAt', 'DESC')
             ->setMaxResults($limit)
             ->getQuery()
