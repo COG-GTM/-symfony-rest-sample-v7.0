@@ -23,6 +23,9 @@ use Twig\TwigFunction;
  * page. If you are starting with Symfony, don't look at this code and consider
  * studying instead the code of the src/App/Twig/AppExtension.php extension.
  *
+ * The source code and absolute file paths are only rendered when the kernel
+ * runs in debug mode; otherwise 'show_source_code()' renders nothing.
+ *
  * @author Ryan Weaver <weaverryan@gmail.com>
  * @author Javier Eguiluz <javier.eguiluz@gmail.com>
  */
@@ -30,8 +33,17 @@ class SourceCodeExtension extends AbstractExtension
 {
     private $controller;
 
+    public function __construct(
+        private bool $debug = false,
+    ) {
+    }
+
     public function setController(?callable $controller): void
     {
+        if (!$this->debug) {
+            return;
+        }
+
         $this->controller = $controller;
     }
 
@@ -50,6 +62,10 @@ class SourceCodeExtension extends AbstractExtension
      */
     public function showSourceCode(Environment $twig, $template): string
     {
+        if (!$this->debug) {
+            return '';
+        }
+
         return $twig->render('debug/source_code.html.twig', [
             'controller' => $this->getController(),
             'template' => $this->getTemplateSource($twig->resolveTemplate($template)),

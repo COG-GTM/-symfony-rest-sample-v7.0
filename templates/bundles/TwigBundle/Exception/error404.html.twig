@@ -22,9 +22,3 @@
         {{ 'http_error_404.suggestion'|trans({ '%url%': path('blog_index') })|raw }}
     </p>
 {% endblock %}
-
-{% block sidebar %}
-    {{ parent() }}
-
-    {{ show_source_code(_self) }}
-{% endblock %}
