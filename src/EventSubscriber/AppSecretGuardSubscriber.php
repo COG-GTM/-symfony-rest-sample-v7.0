@@ -39,7 +39,7 @@ class AppSecretGuardSubscriber implements EventSubscriberInterface
 
     public function __construct(
         private string $secret,
-        private string $environment
+        private string $environment,
     ) {
     }
 
@@ -61,7 +61,7 @@ class AppSecretGuardSubscriber implements EventSubscriberInterface
         }
 
         if ('' === trim($this->secret) || \in_array($this->secret, self::PUBLIC_SECRETS, true)) {
-            throw new \RuntimeException(sprintf('APP_SECRET is empty or publicly known; set a unique random value for the "%s" environment (real environment variable, .env.local or the secrets vault).', $this->environment));
+            throw new \RuntimeException(\sprintf('APP_SECRET is empty or publicly known; set a unique random value for the "%s" environment (real environment variable, .env.local or the secrets vault).', $this->environment));
         }
     }
 }
