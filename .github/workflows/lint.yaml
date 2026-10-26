@@ -92,7 +92,9 @@ jobs:
 
             - name: Check if any dependencies are compromised
               if: always() && steps.install.outcome == 'success'
-              run: /home/runner/.symfony/bin/symfony check:security
+              run: |
+                  export PATH="$HOME/.symfony5/bin:$HOME/.symfony/bin:$PATH"
+                  symfony check:security
 
             - name: Run PHPStan
               if: always() && steps.install.outcome == 'success'

@@ -14,6 +14,7 @@ namespace App\Tests\EventSubscriber;
 use App\EventSubscriber\AppSecretGuardSubscriber;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 
@@ -29,6 +30,9 @@ class AppSecretGuardSubscriberTest extends TestCase
         (new AppSecretGuardSubscriber($secret))->onKernelRequest($this->createEvent(HttpKernelInterface::MAIN_REQUEST));
     }
 
+    /**
+     * @return \Generator<int, array{string}>
+     */
     public function getInsecureSecrets(): \Generator
     {
         yield [''];
@@ -55,6 +59,13 @@ class AppSecretGuardSubscriberTest extends TestCase
 
     private function createEvent(int $requestType): RequestEvent
     {
-        return new RequestEvent($this->createMock(HttpKernelInterface::class), Request::create('/'), $requestType);
+        $kernel = new class() implements HttpKernelInterface {
+            public function handle(Request $request, int $type = self::MAIN_REQUEST, bool $catch = true): Response
+            {
+                return new Response();
+            }
+        };
+
+        return new RequestEvent($kernel, Request::create('/'), $requestType);
     }
 }

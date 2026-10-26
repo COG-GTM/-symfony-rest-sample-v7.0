@@ -87,7 +87,9 @@ class DefaultControllerTest extends WebTestCase
     public function testSignedFragmentIsNotPubliclyAccessible(): void
     {
         $client = static::createClient();
-        $uri = static::getContainer()->get('uri_signer')->sign('http://localhost/_fragment?_path='.rawurlencode('_controller=phpinfo'));
+        $signer = static::getContainer()->get('uri_signer');
+        $this->assertInstanceOf(UriSigner::class, $signer);
+        $uri = $signer->sign('http://localhost/_fragment?_path='.rawurlencode('_controller=phpinfo'));
 
         $client->request('GET', $uri, [], [], ['REMOTE_ADDR' => '203.0.113.10']);
 
