@@ -14,6 +14,7 @@ namespace App\Tests\Controller;
 use App\Entity\Post;
 use App\Pagination\Paginator;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\Mime\Email;
 
 /**
  * Functional test for the controllers defined inside BlogController.
@@ -99,9 +100,11 @@ class BlogControllerTest extends WebTestCase
 
         $this->assertResponseRedirects();
         $this->assertEmailCount(1);
+        $email = $this->getMailerMessage();
+        \assert($email instanceof Email);
         $this->assertMatchesRegularExpression(
             '{href="http://localhost:8000/en/blog/posts/[^"#]+#comment_\\d+"}',
-            $this->getMailerMessage()->getHtmlBody()
+            (string) $email->getHtmlBody()
         );
     }
 
@@ -113,7 +116,7 @@ class BlogControllerTest extends WebTestCase
         ]);
 
         $crawler = $client->request('GET', '/en/blog/');
-        $postPath = parse_url($crawler->filter('article.post > h2 a')->link()->getUri(), \PHP_URL_PATH);
+        $postPath = (string) parse_url($crawler->filter('article.post > h2 a')->link()->getUri(), \PHP_URL_PATH);
         $crawler = $client->request('GET', $postPath);
         $token = $crawler->filter('#comment__token')->attr('value');
 

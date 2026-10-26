@@ -112,8 +112,9 @@ class CommentNotificationSubscriberTest extends TestCase
 
         $subscriber->onCommentCreated(new CommentCreatedEvent($comment));
 
-        $this->assertInstanceOf(Email::class, $mailer->message);
+        $email = $mailer->message;
+        \assert($email instanceof Email);
 
-        return $mailer->message;
+        return $email;
     }
 }

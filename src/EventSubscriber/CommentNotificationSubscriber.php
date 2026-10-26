@@ -31,7 +31,7 @@ class CommentNotificationSubscriber implements EventSubscriberInterface
         private UrlGeneratorInterface $urlGenerator,
         private TranslatorInterface $translator,
         private string $sender,
-        private string $siteUri
+        private string $siteUri,
     ) {
     }
 
@@ -54,7 +54,7 @@ class CommentNotificationSubscriber implements EventSubscriberInterface
 
         $subject = $this->translator->trans('notification.comment_created');
         $body = $this->translator->trans('notification.comment_created.description', [
-            '%title%' => htmlspecialchars($post->getTitle(), \ENT_QUOTES | \ENT_SUBSTITUTE, 'UTF-8'),
+            '%title%' => htmlspecialchars((string) $post->getTitle(), \ENT_QUOTES | \ENT_SUBSTITUTE, 'UTF-8'),
             '%link%' => htmlspecialchars($linkToPost, \ENT_QUOTES | \ENT_SUBSTITUTE, 'UTF-8'),
         ]);
 
@@ -76,6 +76,8 @@ class CommentNotificationSubscriber implements EventSubscriberInterface
      * Generates an absolute URL on the canonical site URI. The current request
      * context can't be used: its host and scheme come from the request's
      * (client controlled) Host header.
+     *
+     * @param array<string, mixed> $parameters
      */
     private function generateSiteUrl(string $route, array $parameters): string
     {
