@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the Symfony package.
  *
@@ -55,7 +57,10 @@ class CheckDefaultCredentialsCommand extends Command
         }
 
         if ([] !== $offenders) {
-            $io->error(sprintf('These users have a well-known demo password and must change it or be removed: %s', implode(', ', $offenders)));
+            $io->error(sprintf(
+                'These users have a well-known demo password and must change it or be removed: %s',
+                implode(', ', $offenders)
+            ));
 
             return Command::FAILURE;
         }
