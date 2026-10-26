@@ -15,7 +15,6 @@ use App\DataFixtures\AppFixtures;
 use App\Entity\User;
 use Doctrine\Common\DataFixtures\ReferenceRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\UnitOfWork;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -71,7 +70,6 @@ class AppFixturesTest extends TestCase
 
         $passwords = [];
         $manager = $this->createMock(EntityManagerInterface::class);
-        $manager->method('getUnitOfWork')->willReturn($this->createMock(UnitOfWork::class));
         $manager->method('persist')->willReturnCallback(static function (object $entity) use (&$passwords): void {
             if ($entity instanceof User) {
                 $passwords[$entity->getUsername()] = mb_substr((string) $entity->getPassword(), mb_strlen('plain:'));
@@ -79,7 +77,15 @@ class AppFixturesTest extends TestCase
         });
 
         $fixtures = new AppFixtures($hasher, new AsciiSlugger(), $configuredPassword);
-        $fixtures->setReferenceRepository(new ReferenceRepository($manager));
+        $references = [];
+        $referenceRepository = $this->createMock(ReferenceRepository::class);
+        $referenceRepository->method('addReference')->willReturnCallback(static function (string $name, object $object) use (&$references): void {
+            $references[$name] = $object;
+        });
+        $referenceRepository->method('getReference')->willReturnCallback(static function (string $name) use (&$references): object {
+            return $references[$name];
+        });
+        $fixtures->setReferenceRepository($referenceRepository);
         $fixtures->load($manager);
 
         return $passwords;

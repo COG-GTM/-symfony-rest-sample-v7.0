@@ -41,7 +41,7 @@ class SecurityControllerTest extends WebTestCase
             '_password' => 'kitten',
         ]);
 
-        $this->assertResponseRedirects('/en/login', Response::HTTP_FOUND);
+        $this->assertResponseRedirects('http://localhost/en/login', Response::HTTP_FOUND);
         $client->followRedirect();
         $this->assertSelectorExists('.alert-danger');
     }
