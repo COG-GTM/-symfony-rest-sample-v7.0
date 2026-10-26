@@ -27,6 +27,8 @@ class AppSecretGuardSubscriber implements EventSubscriberInterface
     private const PUBLICLY_KNOWN_SECRETS = [
         // previously committed in .env (also published by the upstream symfony/demo project)
         '2ca64f8d83b9e89f5f19d672841d6bb8',
+        // briefly committed in .env.dev
+        'b94ad73141130db3ce219a4968a7b7a2',
     ];
 
     public function __construct(
