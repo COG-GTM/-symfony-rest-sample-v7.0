@@ -24,6 +24,7 @@ jobs:
         continue-on-error: false
 
         strategy:
+            fail-fast: false
             matrix:
                 operating-system: ['ubuntu-latest', 'windows-latest', 'macos-latest']
                 php-version: ['8.0']
@@ -43,21 +44,22 @@ jobs:
             - name: "Add PHPUnit matcher"
               run: echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
 
+            - name: "Pin Composer to 2.2 LTS (lockfile uses symfony/flex 1.x)"
+              run: composer self-update --2.2
+
             - name: "Set composer cache directory"
               id: composer-cache
               run: echo "::set-output name=dir::$(composer config cache-files-dir)"
 
             - name: "Cache composer"
-              uses: actions/cache@v2.1.2
+              uses: actions/cache@v4
               with:
                   path: ${{ steps.composer-cache.outputs.dir }}
                   key: ${{ runner.os }}-${{ matrix.php-version }}-composer-${{ hashFiles('composer.json') }}
                   restore-keys: ${{ runner.os }}-${{ matrix.php-version }}-composer-
 
-            - name: "Require symfony/flex"
-              run: composer global require --no-progress --no-scripts --no-plugins symfony/flex
-
-            - run: composer update
+            - name: "Composer install"
+              run: composer install --no-interaction --no-progress
 
             - name: "Install PHPUnit"
               run: vendor/bin/simple-phpunit install

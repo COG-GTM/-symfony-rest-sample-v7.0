@@ -13,6 +13,9 @@ namespace App\Tests\Controller;
 
 use App\Entity\Post;
 use App\Pagination\Paginator;
+use App\Repository\PostRepository;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
@@ -94,5 +97,94 @@ class BlogControllerTest extends WebTestCase
         $this->assertCount(1, $results);
         $this->assertSame('Lorem ipsum dolor sit amet consectetur adipiscing elit', $results[0]['title']);
         $this->assertSame('Jane Doe', $results[0]['author']);
+    }
+
+    public function testAjaxSearchMatchesAnyTerm(): void
+    {
+        $client = static::createClient();
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => 'lorem pellentesque']);
+
+        /** @var array<mixed> $results */
+        $results = json_decode((string) $client->getResponse()->getContent(), true);
+
+        $this->assertCount(3, $results);
+    }
+
+    public function testAjaxSearchHidesScheduledPosts(): void
+    {
+        $client = static::createClient();
+        $this->scheduleLoremPost();
+
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => 'lorem']);
+
+        $this->assertSame([], json_decode((string) $client->getResponse()->getContent(), true));
+    }
+
+    public function testScheduledPostIsNotFoundForAnonymousUsers(): void
+    {
+        $client = static::createClient();
+        $slug = $this->scheduleLoremPost();
+
+        $client->request('GET', '/en/blog/posts/'.$slug);
+
+        $this->assertResponseStatusCodeSame(404);
+    }
+
+    public function testScheduledPostIsNotFoundForOtherUsers(): void
+    {
+        $client = $this->createAuthenticatedClient('john_user');
+        $slug = $this->scheduleLoremPost();
+
+        $client->request('GET', '/en/blog/posts/'.$slug);
+
+        $this->assertResponseStatusCodeSame(404);
+    }
+
+    public function testScheduledPostIsVisibleToItsAuthor(): void
+    {
+        $client = $this->createAuthenticatedClient('jane_admin');
+        $slug = $this->scheduleLoremPost();
+
+        $client->request('GET', '/en/blog/posts/'.$slug);
+
+        $this->assertResponseIsSuccessful();
+    }
+
+    public function testCommentOnScheduledPostIsNotFound(): void
+    {
+        $client = $this->createAuthenticatedClient('john_user');
+        $slug = $this->scheduleLoremPost();
+
+        $client->request('POST', '/en/blog/comment/'.$slug.'/new', [
+            'comment' => ['content' => 'Hi, Symfony!'],
+        ]);
+
+        $this->assertResponseStatusCodeSame(404);
+    }
+
+    private function createAuthenticatedClient(string $username): KernelBrowser
+    {
+        return static::createClient([], [
+            'PHP_AUTH_USER' => $username,
+            'PHP_AUTH_PW' => 'kitten',
+        ]);
+    }
+
+    /**
+     * Moves the post authored by "jane_admin" one week into the future and returns its slug.
+     */
+    private function scheduleLoremPost(): string
+    {
+        /** @var PostRepository $postRepository */
+        $postRepository = static::getContainer()->get(PostRepository::class);
+        /** @var Post $post */
+        $post = $postRepository->findOneBy(['title' => 'Lorem ipsum dolor sit amet consectetur adipiscing elit']);
+        $post->setPublishedAt(new \DateTime('+1 week'));
+
+        /** @var EntityManagerInterface $entityManager */
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->flush();
+
+        return (string) $post->getSlug();
     }
 }

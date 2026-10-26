@@ -17,6 +17,7 @@ use App\Event\CommentCreatedEvent;
 use App\Form\CommentType;
 use App\Repository\PostRepository;
 use App\Repository\TagRepository;
+use App\Security\PostVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Cache;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
@@ -82,6 +83,8 @@ class BlogController extends AbstractController
         //
         // dump($post, $this->getUser(), new \DateTime());
 
+        $this->denyAccessUnlessPublished($post);
+
         return $this->render('blog/post_show.html.twig', ['post' => $post]);
     }
 
@@ -96,6 +99,8 @@ class BlogController extends AbstractController
     #[ParamConverter('post', options: ['mapping' => ['postSlug' => 'slug']])]
     public function commentNew(Request $request, Post $post, EventDispatcherInterface $eventDispatcher, EntityManagerInterface $entityManager): Response
     {
+        $this->denyAccessUnlessPublished($post);
+
         $comment = new Comment();
         $comment->setAuthor($this->getUser());
         $post->addComment($comment);
@@ -133,6 +138,8 @@ class BlogController extends AbstractController
      */
     public function commentForm(Post $post): Response
     {
+        $this->denyAccessUnlessPublished($post);
+
         $form = $this->createForm(CommentType::class);
 
         return $this->render('blog/_comment_form.html.twig', [
@@ -165,5 +172,15 @@ class BlogController extends AbstractController
         }
 
         return $this->json($results);
+    }
+
+    /**
+     * Scheduled posts (published in the future) are only visible to their author.
+     */
+    private function denyAccessUnlessPublished(Post $post): void
+    {
+        if ($post->getPublishedAt() > new \DateTime() && !$this->isGranted(PostVoter::SHOW, $post)) {
+            throw $this->createNotFoundException();
+        }
     }
 }
