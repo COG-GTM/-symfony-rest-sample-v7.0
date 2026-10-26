@@ -22,7 +22,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 /**
- * A deploy check that fails when any user still has a well-known demo password:
+ * A deploy check that fails when any user still has a well-known demo password.
+ *
+ * Usage:
  *
  *     $ php bin/console app:check-default-credentials
  */

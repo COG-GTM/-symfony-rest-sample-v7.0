@@ -41,7 +41,7 @@ $ APP_FIXTURES_PASSWORD=<choose-a-password> php bin/console doctrine:fixtures:lo
 
 The fixtures create the `jane_admin`, `tom_admin` (`ROLE_ADMIN`) and
 `john_user` (`ROLE_USER`) accounts with the password given in
-`APP_FIXTURES_PASSWORD` (you can also set it in `.env.local`). If it's not set,
+`APP_FIXTURES_PASSWORD` (at least 12 characters; you can also set it in `.env.local`). If it's not set,
 each account gets a random password that is never displayed; create your own
 user with `php bin/console app:add-user`. Never load the fixtures into a
 database that is exposed to real users.
