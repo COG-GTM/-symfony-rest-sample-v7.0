@@ -30,6 +30,9 @@ use function Symfony\Component\String\u;
  */
 class PostRepository extends ServiceEntityRepository
 {
+    public const MAX_SEARCH_RESULTS = 50;
+    public const MAX_SEARCH_TERMS = 10;
+
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Post::class);
@@ -76,7 +79,7 @@ class PostRepository extends ServiceEntityRepository
 
         return $queryBuilder
             ->orderBy('p.publishedAt', 'DESC')
-            ->setMaxResults($limit)
+            ->setMaxResults(max(1, min(self::MAX_SEARCH_RESULTS, $limit)))
             ->getQuery()
             ->getResult();
     }
@@ -90,8 +93,10 @@ class PostRepository extends ServiceEntityRepository
         $terms = array_unique($searchQuery->split(' '));
 
         // ignore the search terms that are too short
-        return array_filter($terms, static function ($term) {
+        $terms = array_filter($terms, static function ($term) {
             return 2 <= $term->length();
         });
+
+        return \array_slice($terms, 0, self::MAX_SEARCH_TERMS);
     }
 }
