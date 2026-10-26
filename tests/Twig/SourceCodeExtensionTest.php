@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /*
  * This file is part of the Symfony package.
  *
@@ -24,7 +22,7 @@ class SourceCodeExtensionTest extends TestCase
     {
         $twig = $this->createTwig(new SourceCodeExtension(false));
 
-        $this->assertSame('<aside></aside>', trim($twig->render('page.html.twig')));
+        $this->assertSame('<aside></aside>', $twig->render('page.html.twig'));
     }
 
     public function testControllerIsNotRetainedWithoutDebug(): void

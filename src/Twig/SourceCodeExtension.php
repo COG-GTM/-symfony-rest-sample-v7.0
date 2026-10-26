@@ -35,7 +35,7 @@ class SourceCodeExtension extends AbstractExtension
     private $controller;
 
     public function __construct(
-        private bool $debug
+        private bool $debug,
     ) {
     }
 
