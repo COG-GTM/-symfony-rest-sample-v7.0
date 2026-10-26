@@ -38,7 +38,7 @@ class Kernel extends BaseKernel
 
     private function ensureSecretIsSafe(string $secret): void
     {
-        if ('' === trim($secret)) {
+        if ('' === $secret) {
             throw new \RuntimeException('The APP_SECRET environment variable is empty. Define a random, private value in a real environment variable, in ".env.local" or in the Symfony secrets vault (e.g. php -r "echo bin2hex(random_bytes(32)).PHP_EOL;").');
         }
 
