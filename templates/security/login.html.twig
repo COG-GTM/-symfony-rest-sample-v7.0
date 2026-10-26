@@ -41,49 +41,8 @@
         </div>
 
         <div id="login-help" class="col-sm-7">
-            <h3>
-                <i class="hidden-xs fa fa-long-arrow-left" aria-hidden="true"></i>
-                {{ 'help.login_users'|trans }}
-            </h3>
-
-            <table class="table table-striped table-bordered table-hover">
-                <thead>
-                    <tr>
-                        <th scope="col">{{ 'label.username'|trans }}</th>
-                        <th scope="col">{{ 'label.password'|trans }}</th>
-                        <th scope="col">{{ 'label.role'|trans }}</th>
-                        <th scope="col"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>john_user</td>
-                        <td>kitten</td>
-                        <td><code>ROLE_USER</code> ({{ 'help.role_user'|trans }})</td>
-                        <td>
-                            <button class="btn btn-primary btn-sm" {{ stimulus_action('login', 'prefillJohnUser') }}><i class="fa fa-user"></i></button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>jane_admin</td>
-                        <td>kitten</td>
-                        <td><code>ROLE_ADMIN</code> ({{ 'help.role_admin'|trans }})</td>
-                        <td>
-                            <button class="btn btn-primary btn-sm" {{ stimulus_action('login', 'prefillJaneAdmin') }}><i class="fa fa-user"></i></button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-
             <div id="login-users-help" class="panel panel-default">
                 <div class="panel-body">
-                    <p>
-                        <span class="label label-success">{{ 'note'|trans }}</span>
-                        {{ 'help.reload_fixtures'|trans }}<br/>
-
-                        <code class="console">$ php bin/console doctrine:fixtures:load</code>
-                    </p>
-
                     <p>
                         <span class="label label-success">{{ 'tip'|trans }}</span>
                         {{ 'help.add_user'|trans }}<br/>

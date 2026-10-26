@@ -65,7 +65,7 @@ class BlogControllerTest extends WebTestCase
     {
         $client = static::createClient([], [
             'PHP_AUTH_USER' => 'john_user',
-            'PHP_AUTH_PW' => 'kitten',
+            'PHP_AUTH_PW' => $_SERVER['APP_FIXTURES_PASSWORD'],
         ]);
         $client->followRedirects();
 
