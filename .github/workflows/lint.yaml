@@ -41,6 +41,9 @@ jobs:
                   php-version: ${{ matrix.php-version }}
                   tools: composer:v2
 
+            - name: "Pin Composer 2.2 LTS (composer.lock ships symfony/flex 1.x)"
+              run: composer self-update --2.2
+
             - name: "Set composer cache directory"
               id: composer-cache
               run: echo "::set-output name=dir::$(composer config cache-files-dir)"

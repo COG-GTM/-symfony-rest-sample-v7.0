@@ -43,6 +43,9 @@ jobs:
             - name: "Add PHPUnit matcher"
               run: echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
 
+            - name: "Pin Composer 2.2 LTS (composer.lock ships symfony/flex 1.x)"
+              run: composer self-update --2.2
+
             - name: "Set composer cache directory"
               id: composer-cache
               run: echo "::set-output name=dir::$(composer config cache-files-dir)"
@@ -55,7 +58,9 @@ jobs:
                   restore-keys: ${{ runner.os }}-${{ matrix.php-version }}-composer-
 
             - name: "Require symfony/flex"
-              run: composer global require --no-progress --no-scripts --no-plugins symfony/flex
+              run: |
+                  composer global config --no-plugins allow-plugins.symfony/flex true
+                  composer global require --no-progress --no-scripts --no-plugins symfony/flex
 
             - name: "Generate APP_SECRET"
               shell: bash
