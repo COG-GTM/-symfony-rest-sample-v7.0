@@ -16,6 +16,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Routing\RequestContext;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
@@ -29,7 +30,8 @@ class CommentNotificationSubscriber implements EventSubscriberInterface
         private MailerInterface $mailer,
         private UrlGeneratorInterface $urlGenerator,
         private TranslatorInterface $translator,
-        private string $sender
+        private string $sender,
+        private string $siteUri
     ) {
     }
 
@@ -45,15 +47,15 @@ class CommentNotificationSubscriber implements EventSubscriberInterface
         $comment = $event->getComment();
         $post = $comment->getPost();
 
-        $linkToPost = $this->urlGenerator->generate('blog_post', [
+        $linkToPost = $this->generateSiteUrl('blog_post', [
             'slug' => $post->getSlug(),
             '_fragment' => 'comment_'.$comment->getId(),
-        ], UrlGeneratorInterface::ABSOLUTE_URL);
+        ]);
 
         $subject = $this->translator->trans('notification.comment_created');
         $body = $this->translator->trans('notification.comment_created.description', [
-            '%title%' => $post->getTitle(),
-            '%link%' => $linkToPost,
+            '%title%' => htmlspecialchars($post->getTitle(), \ENT_QUOTES | \ENT_SUBSTITUTE, 'UTF-8'),
+            '%link%' => htmlspecialchars($linkToPost, \ENT_QUOTES | \ENT_SUBSTITUTE, 'UTF-8'),
         ]);
 
         // See https://symfony.com/doc/current/mailer.html
@@ -68,5 +70,25 @@ class CommentNotificationSubscriber implements EventSubscriberInterface
         // That's why in the development environment you won't actually receive any email.
         // However, you can inspect the contents of those unsent emails using the debug toolbar.
         $this->mailer->send($email);
+    }
+
+    /**
+     * Generates an absolute URL on the canonical site URI. The current request
+     * context can't be used: its host and scheme come from the request's
+     * (client controlled) Host header.
+     */
+    private function generateSiteUrl(string $route, array $parameters): string
+    {
+        $requestContext = $this->urlGenerator->getContext();
+        $siteContext = RequestContext::fromUri($this->siteUri);
+        $siteContext->setParameters($requestContext->getParameters());
+
+        $this->urlGenerator->setContext($siteContext);
+
+        try {
+            return $this->urlGenerator->generate($route, $parameters, UrlGeneratorInterface::ABSOLUTE_URL);
+        } finally {
+            $this->urlGenerator->setContext($requestContext);
+        }
     }
 }
