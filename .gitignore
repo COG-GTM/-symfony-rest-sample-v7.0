@@ -3,6 +3,9 @@
 
 .php-version
 
+# SQLite databases are generated locally (see README); never commit them
+/data/*.sqlite
+
 ###> symfony/framework-bundle ###
 /.env.local
 /.env.local.php
