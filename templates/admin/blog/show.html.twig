@@ -32,5 +32,7 @@
 
     {{ parent() }}
 
-    {{ show_source_code(_self) }}
+    {% if app.debug %}
+        {{ show_source_code(_self) }}
+    {% endif %}
 {% endblock %}

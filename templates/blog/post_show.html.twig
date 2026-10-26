@@ -72,6 +72,8 @@
       to share common contents in different templates #}
     {{ parent() }}
 
-    {{ show_source_code(_self) }}
+    {% if app.debug %}
+        {{ show_source_code(_self) }}
+    {% endif %}
     {{ include('blog/_rss.html.twig') }}
 {% endblock %}
