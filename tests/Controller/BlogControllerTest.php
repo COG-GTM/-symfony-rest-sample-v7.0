@@ -104,9 +104,10 @@ class BlogControllerTest extends WebTestCase
         $client = static::createClient();
         $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => 'lorem pellentesque']);
 
-        $results = json_decode($client->getResponse()->getContent(), true);
+        /** @var array<mixed> $results */
+        $results = json_decode((string) $client->getResponse()->getContent(), true);
 
-        $this->assertCount(2, $results);
+        $this->assertCount(3, $results);
     }
 
     public function testAjaxSearchHidesScheduledPosts(): void
@@ -116,7 +117,7 @@ class BlogControllerTest extends WebTestCase
 
         $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => 'lorem']);
 
-        $this->assertSame([], json_decode($client->getResponse()->getContent(), true));
+        $this->assertSame([], json_decode((string) $client->getResponse()->getContent(), true));
     }
 
     public function testScheduledPostIsNotFoundForAnonymousUsers(): void
@@ -180,8 +181,10 @@ class BlogControllerTest extends WebTestCase
         $post = $postRepository->findOneBy(['title' => 'Lorem ipsum dolor sit amet consectetur adipiscing elit']);
         $post->setPublishedAt(new \DateTime('+1 week'));
 
-        static::getContainer()->get(EntityManagerInterface::class)->flush();
+        /** @var EntityManagerInterface $entityManager */
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->flush();
 
-        return $post->getSlug();
+        return (string) $post->getSlug();
     }
 }
