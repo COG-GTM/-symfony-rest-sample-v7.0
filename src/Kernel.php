@@ -32,13 +32,13 @@ class Kernel extends BaseKernel
         parent::boot();
 
         if (!$wasBooted) {
-            $this->ensureSecretIsSafe((string) $this->getContainer()->getParameter('kernel.secret'));
+            $this->ensureSecretIsSafe($this->getContainer()->getParameter('kernel.secret'));
         }
     }
 
-    private function ensureSecretIsSafe(string $secret): void
+    private function ensureSecretIsSafe(mixed $secret): void
     {
-        if ('' === preg_replace('/\s+/', '', $secret)) {
+        if (!\is_string($secret) || '' === preg_replace('/\s+/', '', $secret)) {
             throw new \RuntimeException('The APP_SECRET environment variable is empty or blank. Define a random, private value in a real environment variable, in ".env.local" or in the Symfony secrets vault (e.g. php -r "echo bin2hex(random_bytes(32)).PHP_EOL;").');
         }
 
