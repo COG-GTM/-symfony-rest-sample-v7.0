@@ -78,6 +78,44 @@ class DefaultControllerTest extends WebTestCase
         );
     }
 
+    /**
+     * The "Show code" panel discloses PHP/Twig source code and absolute file
+     * paths, so it must not be rendered when the kernel runs without debug
+     * (e.g. APP_ENV=prod), including on error pages.
+     *
+     * @dataProvider getSourceCodeUrls
+     */
+    public function testSourceCodeIsNotDisclosedWithoutDebug(string $url, int $statusCode): void
+    {
+        $client = static::createClient(['debug' => false]);
+        $client->request('GET', $url);
+
+        $this->assertResponseStatusCodeSame($statusCode);
+
+        $content = (string) $client->getResponse()->getContent();
+        $this->assertStringNotContainsString('sourceCodeModal', $content);
+        $this->assertStringNotContainsString('src/Controller', $content);
+        $this->assertStringNotContainsString('<code class="twig">', $content);
+        $this->assertStringNotContainsString($client->getKernel()->getProjectDir(), $content);
+    }
+
+    public function testSourceCodeIsShownInDebugMode(): void
+    {
+        $client = static::createClient(['debug' => true]);
+        $client->request('GET', '/en/blog/');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorExists('#sourceCodeModal');
+    }
+
+    public function getSourceCodeUrls(): \Generator
+    {
+        yield ['/en/blog/', Response::HTTP_OK];
+        yield ['/en/blog/search', Response::HTTP_OK];
+        yield ['/en/login', Response::HTTP_OK];
+        yield ['/en/blog/posts/this-post-does-not-exist', Response::HTTP_NOT_FOUND];
+    }
+
     public function getPublicUrls(): ?\Generator
     {
         yield ['/'];
