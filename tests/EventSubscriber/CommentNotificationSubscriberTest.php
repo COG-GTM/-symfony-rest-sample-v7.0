@@ -72,10 +72,10 @@ class CommentNotificationSubscriberTest extends TestCase
 
     private function notify(UrlGenerator $urlGenerator, string $postTitle): Email
     {
-        $mailer = new class() implements MailerInterface {
+        $mailer = new class implements MailerInterface {
             public ?RawMessage $message = null;
 
-            public function send(RawMessage $message, Envelope $envelope = null): void
+            public function send(RawMessage $message, ?Envelope $envelope = null): void
             {
                 $this->message = $message;
             }
@@ -85,7 +85,7 @@ class CommentNotificationSubscriberTest extends TestCase
         $translator->method('trans')->willReturnCallback(
             static fn (string $id, array $parameters = []): string => [] === $parameters
                 ? $id
-                : sprintf('title=%s link=%s', $parameters['%title%'], $parameters['%link%'])
+                : \sprintf('title=%s link=%s', $parameters['%title%'], $parameters['%link%'])
         );
 
         $subscriber = new CommentNotificationSubscriber(
