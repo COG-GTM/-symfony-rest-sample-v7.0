@@ -56,6 +56,34 @@ class BlogControllerTest extends WebTestCase
     }
 
     /**
+     * @dataProvider getRssLinkInjectionUrls
+     */
+    public function testRssLinkIgnoresRouteParametersFromQueryString(string $url): void
+    {
+        $client = static::createClient();
+        $client->request('GET', $url);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorExists('.section.rss a[href="/en/blog/rss.xml"]');
+    }
+
+    public function getRssLinkInjectionUrls(): \Generator
+    {
+        yield 'post page, protocol-relative _locale' => ['/en/blog/posts/lorem-ipsum-dolor-sit-amet-consectetur-adipiscing-elit?_locale=//evil.example'];
+        yield 'index page, protocol-relative _locale' => ['/en/blog/?_locale=//evil.example'];
+        yield 'index page, other route parameters' => ['/en/blog/?_format=json&page=99'];
+    }
+
+    public function testRssLinkKeepsTagFilter(): void
+    {
+        $client = static::createClient();
+        $client->request('GET', '/en/blog/?tag=lorem&_locale=//evil.example');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorExists('.section.rss a[href="/en/blog/rss.xml?tag=lorem"]');
+    }
+
+    /**
      * This test changes the database contents by creating a new comment. However,
      * thanks to the DAMADoctrineTestBundle and its PHPUnit listener, all changes
      * to the database are rolled back when this test completes. This means that
