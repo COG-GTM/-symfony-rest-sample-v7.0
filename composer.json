@@ -59,6 +59,10 @@
         "symfony/web-profiler-bundle": "^6.0"
     },
     "config": {
+        "allow-plugins": {
+            "symfony/flex": true,
+            "symfony/runtime": true
+        },
         "platform": {
             "php": "8.0.2"
         },
