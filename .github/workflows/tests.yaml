@@ -38,7 +38,7 @@ jobs:
                   coverage: "none"
                   extensions: "intl, mbstring, pdo_sqlite"
                   php-version: ${{ matrix.php-version }}
-                  tools: composer:v2
+                  tools: composer:2.2
 
             - name: "Add PHPUnit matcher"
               run: echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
