@@ -39,7 +39,10 @@ jobs:
                   coverage: "none"
                   extensions: intl
                   php-version: ${{ matrix.php-version }}
-                  tools: composer:v2.2
+                  tools: composer:v2
+
+            - name: "Use Composer 2.2 LTS (symfony/flex 1.x is incompatible with Composer >= 2.3)"
+              run: composer self-update --2.2
 
             - name: "Set composer cache directory"
               id: composer-cache
