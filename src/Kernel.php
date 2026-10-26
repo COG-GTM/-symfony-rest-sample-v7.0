@@ -48,7 +48,7 @@ class Kernel extends BaseKernel
     public static function assertSecretIsSafe(string $secret, string $environment): void
     {
         if ('' === trim($secret) || \in_array($secret, self::PUBLIC_SECRETS, true)) {
-            throw new \RuntimeException(sprintf('APP_SECRET is empty or publicly known. Set a unique random value for the "%s" environment as a real environment variable, in .env.local or in the secrets vault.', $environment));
+            throw new \RuntimeException(\sprintf('APP_SECRET is empty or publicly known. Set a unique random value for the "%s" environment as a real environment variable, in .env.local or in the secrets vault.', $environment));
         }
     }
 }
