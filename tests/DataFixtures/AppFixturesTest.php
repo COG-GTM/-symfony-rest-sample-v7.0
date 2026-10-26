@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the Symfony package.
  *
@@ -79,18 +81,21 @@ class AppFixturesTest extends TestCase
         $manager = $this->createMock(EntityManagerInterface::class);
         $manager->method('persist')->willReturnCallback(static function (object $entity) use (&$passwords): void {
             if ($entity instanceof User) {
-                $passwords[$entity->getUserIdentifier()] = mb_substr((string) $entity->getPassword(), mb_strlen('plain:'));
+                $hash = (string) $entity->getPassword();
+                $passwords[$entity->getUserIdentifier()] = mb_substr($hash, mb_strlen('plain:'));
             }
         });
 
         $references = [];
         $referenceRepository = $this->createMock(ReferenceRepository::class);
-        $referenceRepository->method('addReference')->willReturnCallback(static function (string $name, object $object) use (&$references): void {
+        $addReference = static function (string $name, object $object) use (&$references): void {
             $references[$name] = $object;
-        });
-        $referenceRepository->method('getReference')->willReturnCallback(static function (string $name) use (&$references): object {
+        };
+        $getReference = static function (string $name) use (&$references): object {
             return $references[$name];
-        });
+        };
+        $referenceRepository->method('addReference')->willReturnCallback($addReference);
+        $referenceRepository->method('getReference')->willReturnCallback($getReference);
 
         $fixtures = new AppFixtures($hasher, new AsciiSlugger(), $configuredPassword);
         $fixtures->setReferenceRepository($referenceRepository);
