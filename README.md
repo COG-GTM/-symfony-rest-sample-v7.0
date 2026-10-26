@@ -44,6 +44,12 @@ If you don't have the Symfony binary installed, run `php -S localhost:8000 -t pu
 to use the built-in PHP web server or [configure a web server][3] like Nginx or
 Apache to run the application.
 
+Before running the application with `APP_ENV=prod`, generate a unique secret
+(e.g. `openssl rand -hex 32`) and provide it as the `APP_SECRET` environment
+variable, in `.env.local` or via the [secrets vault][5]. Never reuse the values
+committed to this repository: production requests are refused when `APP_SECRET`
+is empty or publicly known.
+
 Tests
 -----
 
@@ -58,3 +64,4 @@ $ ./bin/phpunit
 [2]: https://symfony.com/doc/current/reference/requirements.html
 [3]: https://symfony.com/doc/current/cookbook/configuration/web_server_configuration.html
 [4]: https://symfony.com/download
+[5]: https://symfony.com/doc/current/configuration/secrets.html
