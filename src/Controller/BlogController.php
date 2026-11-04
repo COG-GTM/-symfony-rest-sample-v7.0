@@ -179,7 +179,7 @@ class BlogController extends AbstractController
      */
     private function denyAccessUnlessPublished(Post $post): void
     {
-        if ($post->getPublishedAt() > new \DateTime() && !$this->isGranted(PostVoter::SHOW, $post)) {
+        if (!$post->isPublished() && !$this->isGranted(PostVoter::SHOW, $post)) {
             throw $this->createNotFoundException();
         }
     }

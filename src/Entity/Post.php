@@ -159,6 +159,14 @@ class Post
         $this->publishedAt = $publishedAt;
     }
 
+    /**
+     * Posts with a future publication date are scheduled and must stay hidden from the public.
+     */
+    public function isPublished(\DateTimeInterface $now = null): bool
+    {
+        return $this->publishedAt <= ($now ?? new \DateTime());
+    }
+
     public function getAuthor(): ?User
     {
         return $this->author;
