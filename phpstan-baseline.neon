@@ -101,11 +101,6 @@ parameters:
 			path: src/Controller/BlogController.php
 
 		-
-			message: "#^Parameter \\#2 \\$limit of method App\\\\Repository\\\\PostRepository\\:\\:findBySearchQuery\\(\\) expects int, bool\\|float\\|int\\|string\\|null given\\.$#"
-			count: 1
-			path: src/Controller/BlogController.php
-
-		-
 			message: "#^Cannot call method setPassword\\(\\) on Symfony\\\\Component\\\\Security\\\\Core\\\\User\\\\UserInterface\\|null\\.$#"
 			count: 1
 			path: src/Controller/UserController.php

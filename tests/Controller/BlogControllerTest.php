@@ -13,6 +13,8 @@ namespace App\Tests\Controller;
 
 use App\Entity\Post;
 use App\Pagination\Paginator;
+use App\Repository\PostRepository;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
@@ -94,5 +96,49 @@ class BlogControllerTest extends WebTestCase
         $this->assertCount(1, $results);
         $this->assertSame('Lorem ipsum dolor sit amet consectetur adipiscing elit', $results[0]['title']);
         $this->assertSame('Jane Doe', $results[0]['author']);
+    }
+
+    public function testAjaxSearchClampsResultLimit(): void
+    {
+        $client = static::createClient();
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => 'lorem ipsum dolor sit amet consectetur adipiscing elit', 'l' => 100000]);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertLessThanOrEqual(PostRepository::MAX_SEARCH_RESULTS, \count($this->getSearchResults($client)));
+
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => 'lorem', 'l' => -5]);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertCount(1, $this->getSearchResults($client));
+    }
+
+    public function testAjaxSearchIgnoresTermsBeyondLimit(): void
+    {
+        $client = static::createClient();
+        $fillerTerms = array_map(static fn (int $i): string => 'zz'.$i, range(1, PostRepository::MAX_SEARCH_TERMS));
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => implode(' ', $fillerTerms).' lorem']);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSame([], $this->getSearchResults($client));
+    }
+
+    public function testAjaxSearchTreatsLikeWildcardsLiterally(): void
+    {
+        $client = static::createClient();
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => '%% __', 'l' => 'abc']);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSame([], $this->getSearchResults($client));
+    }
+
+    /**
+     * @return array<mixed>
+     */
+    private function getSearchResults(KernelBrowser $client): array
+    {
+        $results = json_decode((string) $client->getResponse()->getContent(), true);
+        \assert(\is_array($results));
+
+        return $results;
     }
 }
