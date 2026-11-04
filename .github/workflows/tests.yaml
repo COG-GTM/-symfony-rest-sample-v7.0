@@ -57,6 +57,9 @@ jobs:
             - name: "Require symfony/flex"
               run: composer global require --no-progress --no-scripts --no-plugins symfony/flex
 
+            - name: "Allow symfony/flex plugin"
+              run: composer global config --no-plugins allow-plugins.symfony/flex true
+
             - run: composer update
 
             - name: "Install PHPUnit"
