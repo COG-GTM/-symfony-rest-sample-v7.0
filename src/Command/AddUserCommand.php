@@ -121,8 +121,9 @@ class AddUserCommand extends Command
             return;
         }
 
-        // fail before echoing anything: with the old "username password email"
-        // syntax this argument would contain the plain password
+        // with the old "username password email" syntax the email and full-name
+        // arguments may contain the plain password: fail early on an invalid
+        // email and never echo the values of these arguments
         $email = $input->getArgument('email');
         if (\is_string($email)) {
             $this->validator->validateEmail($email);
@@ -159,7 +160,7 @@ class AddUserCommand extends Command
         // Ask for the email if it's not defined
         $email = $input->getArgument('email');
         if (null !== $email) {
-            $this->io->text(' > <info>Email</info>: '.$email);
+            $this->io->text(' > <info>Email</info>: (provided as argument)');
         } else {
             $email = $this->io->ask('Email', null, [$this->validator, 'validateEmail']);
             $input->setArgument('email', $email);
@@ -168,7 +169,7 @@ class AddUserCommand extends Command
         // Ask for the full name if it's not defined
         $fullName = $input->getArgument('full-name');
         if (null !== $fullName) {
-            $this->io->text(' > <info>Full Name</info>: '.$fullName);
+            $this->io->text(' > <info>Full Name</info>: (provided as argument)');
         } else {
             $fullName = $this->io->ask('Full Name', null, [$this->validator, 'validateFullName']);
             $input->setArgument('full-name', $fullName);
@@ -211,7 +212,7 @@ class AddUserCommand extends Command
         $this->entityManager->persist($user);
         $this->entityManager->flush();
 
-        $this->io->success(sprintf('%s was successfully created: %s (%s)', $isAdmin ? 'Administrator user' : 'User', $user->getUsername(), $user->getEmail()));
+        $this->io->success(sprintf('%s was successfully created: %s', $isAdmin ? 'Administrator user' : 'User', $user->getUsername()));
 
         $event = $stopwatch->stop('add-user-command');
         if ($output->isVerbose()) {
@@ -256,7 +257,7 @@ class AddUserCommand extends Command
         $existingEmail = $this->users->findOneBy(['email' => $email]);
 
         if (null !== $existingEmail) {
-            throw new RuntimeException(sprintf('There is already a user registered with the "%s" email.', $email));
+            throw new RuntimeException('There is already a user registered with this email.');
         }
     }
 

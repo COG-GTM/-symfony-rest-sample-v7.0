@@ -104,6 +104,21 @@ class AddUserCommandTest extends AbstractCommandTest
         $this->assertUserNotCreated();
     }
 
+    /**
+     * A legacy positional password that looks like an email ("username p@ss")
+     * is accepted as the email argument, but the wizard must not echo it.
+     */
+    public function testEmailAndFullNameArgumentsAreNotEchoed(): void
+    {
+        $tester = $this->executeCommand(
+            ['username' => $this->userData['username'], 'email' => 'p@ssw0rd!', 'full-name' => 'other@secret'],
+            [$this->userData['password']]
+        );
+
+        $this->assertStringNotContainsString('p@ssw0rd!', $tester->getDisplay());
+        $this->assertStringNotContainsString('other@secret', $tester->getDisplay());
+    }
+
     public function testNonInteractiveWithoutPasswordFails(): void
     {
         $this->expectException(RuntimeException::class);

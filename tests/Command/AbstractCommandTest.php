@@ -21,9 +21,9 @@ abstract class AbstractCommandTest extends KernelTestCase
      * This helper method abstracts the boilerplate code needed to test the
      * execution of a command.
      *
-     * @param array $arguments All the arguments passed when executing the command
-     * @param array $inputs    The (optional) answers given to the command when it asks for the value of the missing arguments
-     * @param array<string, mixed> $options The (optional) CommandTester options (e.g. ['interactive' => false])
+     * @param array                $arguments All the arguments passed when executing the command
+     * @param array                $inputs    The (optional) answers given to the command when it asks for the value of the missing arguments
+     * @param array<string, mixed> $options   The (optional) CommandTester options (e.g. ['interactive' => false])
      */
     protected function executeCommand(array $arguments, array $inputs = [], array $options = []): CommandTester
     {
