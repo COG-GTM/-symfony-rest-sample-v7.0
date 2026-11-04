@@ -22,3 +22,9 @@
 npm-debug.log
 yarn-error.log
 ###< symfony/webpack-encore-bundle ###
+
+###> app ###
+# The development database is generated locally (see README) and must never be committed,
+# because it contains the well-known demo accounts created by the fixtures.
+/data/database.sqlite
+###< app ###

@@ -30,11 +30,25 @@ $ composer create-project symfony/symfony-demo my_project
 Usage
 -----
 
-There's no need to configure anything to run the application. If you have
-[installed Symfony][4] binary, run this command:
+The application uses a local SQLite database (`data/database.sqlite`), which is
+not distributed with the code. Create it and, **only in local development
+environments**, load the demo fixtures:
 
 ```bash
 $ cd my_project/
+$ php bin/console doctrine:schema:create
+$ php bin/console doctrine:fixtures:load
+```
+
+> **Warning:** the fixtures create demo accounts with well-known credentials
+> (including users with `ROLE_ADMIN`; see `src/DataFixtures/AppFixtures.php`).
+> Never load them in a publicly reachable deployment. To create your own users
+> run `php bin/console app:add-user`; to remove demo users from an existing
+> database run `php bin/console app:delete-user <username>`.
+
+If you have [installed Symfony][4] binary, run this command:
+
+```bash
 $ symfony serve
 ```
 
