@@ -133,10 +133,8 @@ class BlogControllerTest extends WebTestCase
     }
 
     /**
-     * Simulates two admins saving posts with the same title at the same time:
-     * both pass the UniqueEntity validation and the other post is written right
-     * before this one is flushed. The database must reject the duplicated slug
-     * and the form must show the validation error instead of a server error.
+     * A unique violation that is not about the slug (here, a tag created by a
+     * concurrent request) must not be reported as a duplicated title.
      */
     public function testAdminNewPostWithConcurrentlyCreatedTagIsNotReportedAsDuplicatedTitle(): void
     {
@@ -173,6 +171,12 @@ class BlogControllerTest extends WebTestCase
         $this->assertSelectorNotExists('form .form-group.has-error');
     }
 
+    /**
+     * Simulates two admins saving posts with the same title at the same time:
+     * both pass the UniqueEntity validation and the other post is written right
+     * before this one is flushed. The database must reject the duplicated slug
+     * and the form must show the validation error instead of a server error.
+     */
     public function testAdminNewPostWithConcurrentlyDuplicatedSlug(): void
     {
         $postTitle = 'Blog Post Title '.mt_rand();
