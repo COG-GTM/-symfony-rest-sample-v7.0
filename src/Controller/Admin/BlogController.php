@@ -42,6 +42,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[Route('/admin/post'), IsGranted('ROLE_ADMIN')]
 class BlogController extends AbstractController
 {
+    private const POST_SLUG_UNIQUE_INDEX = 'UNIQ_58A92E65989D9B62';
+
     /**
      * Lists all Post entities.
      *
@@ -103,8 +105,8 @@ class BlogController extends AbstractController
                 }
 
                 return $this->redirectToRoute('admin_post_index');
-            } catch (UniqueConstraintViolationException) {
-                $this->addDuplicatedSlugError($form, $translator);
+            } catch (UniqueConstraintViolationException $exception) {
+                $this->addDuplicatedSlugError($exception, $form, $translator);
             }
         }
 
@@ -145,8 +147,8 @@ class BlogController extends AbstractController
                 $this->addFlash('success', 'post.updated_successfully');
 
                 return $this->redirectToRoute('admin_post_edit', ['id' => $post->getId()]);
-            } catch (UniqueConstraintViolationException) {
-                $this->addDuplicatedSlugError($form, $translator);
+            } catch (UniqueConstraintViolationException $exception) {
+                $this->addDuplicatedSlugError($exception, $form, $translator);
             }
         }
 
@@ -184,9 +186,15 @@ class BlogController extends AbstractController
      * The UniqueEntity constraint on Post only checks the slug before saving, so
      * two concurrent requests can both pass it. The unique index on the slug
      * column rejects the second write; report it like the validator would.
+     * Other unique violations (e.g. a tag created concurrently) are rethrown.
      */
-    private function addDuplicatedSlugError(FormInterface $form, TranslatorInterface $translator): void
+    private function addDuplicatedSlugError(UniqueConstraintViolationException $exception, FormInterface $form, TranslatorInterface $translator): void
     {
+        $message = strtolower($exception->getMessage());
+        if (!str_contains($message, 'symfony_demo_post.slug') && !str_contains($message, strtolower(self::POST_SLUG_UNIQUE_INDEX))) {
+            throw $exception;
+        }
+
         $form->get('title')->addError(new FormError($translator->trans('post.slug_unique', [], 'validators')));
     }
 }

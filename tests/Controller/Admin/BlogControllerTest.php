@@ -138,6 +138,41 @@ class BlogControllerTest extends WebTestCase
      * before this one is flushed. The database must reject the duplicated slug
      * and the form must show the validation error instead of a server error.
      */
+    public function testAdminNewPostWithConcurrentlyCreatedTagIsNotReportedAsDuplicatedTitle(): void
+    {
+        $tagName = 'tag-'.mt_rand();
+
+        $client = static::createClient([], [
+            'PHP_AUTH_USER' => 'jane_admin',
+            'PHP_AUTH_PW' => 'kitten',
+        ]);
+        $client->disableReboot();
+        $crawler = $client->request('GET', '/en/admin/post/new');
+
+        /** @var EntityManagerInterface $entityManager */
+        $entityManager = static::getContainer()->get('doctrine.orm.entity_manager');
+        $entityManager->getEventManager()->addEventListener([Events::onFlush], new class($tagName) {
+            public function __construct(private string $tagName)
+            {
+            }
+
+            public function onFlush(OnFlushEventArgs $args): void
+            {
+                $args->getEntityManager()->getConnection()->insert('symfony_demo_tag', ['name' => $this->tagName]);
+            }
+        });
+
+        $client->submit($crawler->selectButton('Create post')->form([
+            'post[title]' => 'Blog Post Title '.mt_rand(),
+            'post[summary]' => $this->generateRandomString(255),
+            'post[content]' => $this->generateRandomString(1024),
+            'post[tags]' => $tagName,
+        ]));
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_INTERNAL_SERVER_ERROR);
+        $this->assertSelectorNotExists('form .form-group.has-error');
+    }
+
     public function testAdminNewPostWithConcurrentlyDuplicatedSlug(): void
     {
         $postTitle = 'Blog Post Title '.mt_rand();
