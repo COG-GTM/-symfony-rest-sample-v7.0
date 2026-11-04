@@ -12,11 +12,13 @@ framework:
         cookie_samesite: lax
         storage_factory_id: session.storage.factory.native
 
-    # When using the HTTP Cache, ESI allows to render page fragments separately
-    # and with different cache configurations for each fragment
+    # ESI and the /_fragment endpoint stay disabled: no ESI-capable reverse proxy
+    # sits in front of this app, and /_fragment runs any controller (or, on
+    # Symfony < 6.4, any PHP function) named in a request signed with APP_SECRET.
+    # Only re-enable them behind such a proxy, with a unique, non-committed secret.
     # https://symfony.com/doc/current/http_cache/esi.html
-    esi: true
-    fragments: true
+    esi: false
+    fragments: false
 
     php_errors:
         log: true
