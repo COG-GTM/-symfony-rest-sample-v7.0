@@ -75,6 +75,27 @@ class UserControllerTest extends WebTestCase
         $this->assertSame($newUserEmail, $user->getEmail());
     }
 
+    public function testEditUserWithEmailOfAnotherUser(): void
+    {
+        $existingEmail = 'john_user@symfony.com';
+
+        $client = static::createClient([], [
+            'PHP_AUTH_USER' => 'jane_admin',
+            'PHP_AUTH_PW' => 'kitten',
+        ]);
+        $client->request('GET', '/en/profile/edit');
+        $client->submitForm('Save changes', [
+            'user[email]' => $existingEmail,
+        ]);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorTextContains('form', 'This email address cannot be used.');
+
+        $userRepository = static::getContainer()->get(UserRepository::class);
+        $this->assertSame('jane_admin@symfony.com', $userRepository->findOneByUsername('jane_admin')->getEmail());
+        $this->assertSame('john_user', $userRepository->findOneByEmail($existingEmail)->getUsername());
+    }
+
     public function testChangePassword(): void
     {
         $newUserPassword = 'new-password';

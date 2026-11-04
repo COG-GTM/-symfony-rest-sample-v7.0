@@ -12,6 +12,7 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -19,6 +20,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 /**
  * @ORM\Entity(repositoryClass="App\Repository\UserRepository")
  * @ORM\Table(name="symfony_demo_user")
+ * @UniqueEntity(fields={"username"}, message="user.username_unique")
+ * @UniqueEntity(fields={"email"}, message="user.email_unique")
  *
  * Defines the properties of the User entity to represent the application users.
  * See https://symfony.com/doc/current/doctrine.html#creating-an-entity-class
