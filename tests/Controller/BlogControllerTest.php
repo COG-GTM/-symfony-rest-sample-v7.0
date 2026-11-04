@@ -131,6 +131,49 @@ class BlogControllerTest extends WebTestCase
         $this->assertSame([], $this->getSearchResults($client));
     }
 
+    public function testAjaxSearchIgnoresNonNumericLimit(): void
+    {
+        $client = static::createClient();
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => 'lorem', 'l' => 'abc']);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertCount(1, $this->getSearchResults($client));
+    }
+
+    public function testAjaxSearchIgnoresQueryBeyondMaxLength(): void
+    {
+        $client = static::createClient();
+        $padding = str_repeat('z', PostRepository::MAX_SEARCH_QUERY_LENGTH);
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => $padding.' lorem']);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSame([], $this->getSearchResults($client));
+    }
+
+    public function testAjaxSearchWithManyTermsBindsAtMostMaxSearchTerms(): void
+    {
+        $client = static::createClient();
+        $client->enableProfiler();
+        $terms = array_map(static fn (int $i): string => base_convert((string) ($i + 36), 10, 36), range(1, 1000));
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => implode(' ', $terms)]);
+
+        $this->assertResponseIsSuccessful();
+
+        $profile = $client->getProfile();
+        \assert(false !== $profile);
+        $searchQueries = [];
+        foreach ($profile->getCollector('db')->getQueries() as $connectionQueries) {
+            foreach ($connectionQueries as $query) {
+                if (str_contains($query['sql'], ' LIKE ')) {
+                    $searchQueries[] = $query['sql'];
+                }
+            }
+        }
+
+        $this->assertCount(1, $searchQueries);
+        $this->assertLessThanOrEqual(PostRepository::MAX_SEARCH_TERMS, substr_count($searchQueries[0], '?'));
+    }
+
     /**
      * @return array<mixed>
      */

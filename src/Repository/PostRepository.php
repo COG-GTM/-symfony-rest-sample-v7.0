@@ -32,6 +32,7 @@ class PostRepository extends ServiceEntityRepository
 {
     public const MAX_SEARCH_RESULTS = 50;
     public const MAX_SEARCH_TERMS = 10;
+    public const MAX_SEARCH_QUERY_LENGTH = 100;
 
     public function __construct(ManagerRegistry $registry)
     {
@@ -89,7 +90,7 @@ class PostRepository extends ServiceEntityRepository
      */
     private function extractSearchTerms(string $searchQuery): array
     {
-        $searchQuery = u($searchQuery)->replaceMatches('/[[:space:]]+/', ' ')->trim();
+        $searchQuery = u($searchQuery)->slice(0, self::MAX_SEARCH_QUERY_LENGTH)->replaceMatches('/[[:space:]]+/', ' ')->trim();
         $terms = array_unique($searchQuery->split(' '));
 
         // ignore the search terms that are too short
