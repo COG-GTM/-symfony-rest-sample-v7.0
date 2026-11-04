@@ -34,6 +34,14 @@
                 <source>comment.is_spam</source>
                 <target>O conteúdo desse comentário é considerado spam.</target>
             </trans-unit>
+            <trans-unit id="user.email_unique">
+                <source>user.email_unique</source>
+                <target>Este endereço de e-mail não pode ser usado. Por favor, escolha outro.</target>
+            </trans-unit>
+            <trans-unit id="user.username_unique">
+                <source>user.username_unique</source>
+                <target>Este nome de usuário não pode ser usado. Por favor, escolha outro.</target>
+            </trans-unit>
         </body>
     </file>
 </xliff>
