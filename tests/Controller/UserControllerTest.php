@@ -141,8 +141,10 @@ class UserControllerTest extends WebTestCase
 
     private function getUser(string $username): User
     {
+        /** @var UserRepository $repository */
+        $repository = static::getContainer()->get(UserRepository::class);
         /** @var User $user */
-        $user = static::getContainer()->get(UserRepository::class)->findOneBy(['username' => $username]);
+        $user = $repository->findOneBy(['username' => $username]);
 
         return $user;
     }
