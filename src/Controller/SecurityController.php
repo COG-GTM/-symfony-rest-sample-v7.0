@@ -11,6 +11,7 @@
 
 namespace App\Controller;
 
+use App\Security\LocalTargetPath;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -49,6 +50,8 @@ class SecurityController extends AbstractController
             'last_username' => $helper->getLastUsername(),
             // last authentication error (if any)
             'error' => $helper->getLastAuthenticationError(),
+            // only local paths are allowed as the post-login redirect target
+            'target_path' => LocalTargetPath::sanitize($request->query->all()['redirect_to'] ?? null),
         ]);
     }
 
