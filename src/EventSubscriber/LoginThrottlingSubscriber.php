@@ -16,6 +16,7 @@ namespace App\EventSubscriber;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\Security\Core\Exception\TooManyLoginAttemptsAuthenticationException;
 use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
 use Symfony\Component\Security\Http\Event\CheckPassportEvent;
@@ -45,7 +46,7 @@ class LoginThrottlingSubscriber implements EventSubscriberInterface
     public static function getSubscribedEvents(): array
     {
         return [
-            // runs before the password is checked (and before the user is loaded)
+            // runs before the password is checked
             CheckPassportEvent::class => ['onCheckPassport', 2080],
             LoginSuccessEvent::class => 'onLoginSuccess',
         ];
@@ -65,7 +66,7 @@ class LoginThrottlingSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $userAttempts = $this->update($this->userKey($badge->getUserIdentifier(), $request), static fn (int $attempts): int => $attempts + 1);
+        $userAttempts = $this->update($this->userKey($this->canonicalUsername($badge), $request), static fn (int $attempts): int => $attempts + 1);
         $ipAttempts = $this->update($this->ipKey($request), static fn (int $attempts): int => $attempts + 1);
 
         if ($userAttempts > self::MAX_ATTEMPTS || $ipAttempts > self::MAX_ATTEMPTS_PER_IP) {
@@ -124,9 +125,22 @@ class LoginThrottlingSubscriber implements EventSubscriberInterface
         }
     }
 
+    /**
+     * Counts every spelling that resolves to the same account (e.g. case
+     * variants on a case-insensitive lookup) against that account.
+     */
+    private function canonicalUsername(UserBadge $badge): string
+    {
+        try {
+            return $badge->getUser()->getUserIdentifier();
+        } catch (AuthenticationException) {
+            return $badge->getUserIdentifier();
+        }
+    }
+
     private function userKey(string $username, Request $request): string
     {
-        return 'user-'.hash('sha256', mb_strtolower($username).'|'.$request->getClientIp());
+        return 'user-'.hash('sha256', mb_convert_case($username, \MB_CASE_FOLD).'|'.$request->getClientIp());
     }
 
     private function ipKey(Request $request): string
