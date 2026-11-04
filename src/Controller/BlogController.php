@@ -20,7 +20,6 @@ use App\Repository\TagRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Cache;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -66,15 +65,14 @@ class BlogController extends AbstractController
     }
 
     /**
-     * NOTE: The $post controller argument is automatically injected by Symfony
-     * after performing a database query looking for a Post with the 'slug'
-     * value given in the route.
-     *
-     * See https://symfony.com/doc/current/bundles/SensioFrameworkExtraBundle/annotations/converters.html
+     * NOTE: The post is looked up explicitly (instead of using the ParamConverter)
+     * so that posts scheduled for future publication are not exposed.
      */
     #[Route('/posts/{slug}', methods: ['GET'], name: 'blog_post')]
-    public function postShow(Post $post): Response
+    public function postShow(string $slug, PostRepository $posts): Response
     {
+        $post = $this->findPublishedPostOr404($slug, $posts);
+
         // Symfony's 'dump()' function is an improved version of PHP's 'var_dump()' but
         // it's not available in the 'prod' environment to prevent leaking sensitive information.
         // It can be used both in PHP files and Twig templates, but it requires to
@@ -85,17 +83,12 @@ class BlogController extends AbstractController
         return $this->render('blog/post_show.html.twig', ['post' => $post]);
     }
 
-    /**
-     * NOTE: The ParamConverter mapping is required because the route parameter
-     * (postSlug) doesn't match any of the Doctrine entity properties (slug).
-     *
-     * See https://symfony.com/doc/current/bundles/SensioFrameworkExtraBundle/annotations/converters.html#doctrine-converter
-     */
     #[Route('/comment/{postSlug}/new', methods: ['POST'], name: 'comment_new')]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
-    #[ParamConverter('post', options: ['mapping' => ['postSlug' => 'slug']])]
-    public function commentNew(Request $request, Post $post, EventDispatcherInterface $eventDispatcher, EntityManagerInterface $entityManager): Response
+    public function commentNew(Request $request, string $postSlug, PostRepository $posts, EventDispatcherInterface $eventDispatcher, EntityManagerInterface $entityManager): Response
     {
+        $post = $this->findPublishedPostOr404($postSlug, $posts);
+
         $comment = new Comment();
         $comment->setAuthor($this->getUser());
         $post->addComment($comment);
@@ -165,5 +158,16 @@ class BlogController extends AbstractController
         }
 
         return $this->json($results);
+    }
+
+    private function findPublishedPostOr404(string $slug, PostRepository $posts): Post
+    {
+        $post = $posts->findOneBySlugPublished($slug);
+
+        if (null === $post) {
+            throw $this->createNotFoundException();
+        }
+
+        return $post;
     }
 }

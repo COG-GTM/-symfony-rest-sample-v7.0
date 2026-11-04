@@ -54,6 +54,20 @@ class PostRepository extends ServiceEntityRepository
         return (new Paginator($qb))->paginate($page);
     }
 
+    public function findOneBySlugPublished(string $slug): ?Post
+    {
+        /** @var Post|null $post */
+        $post = $this->createQueryBuilder('p')
+            ->where('p.slug = :slug')
+            ->andWhere('p.publishedAt <= :now')
+            ->setParameter('slug', $slug)
+            ->setParameter('now', new \DateTime())
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        return $post;
+    }
+
     /**
      * @return Post[]
      */
@@ -66,15 +80,17 @@ class PostRepository extends ServiceEntityRepository
         }
 
         $queryBuilder = $this->createQueryBuilder('p');
+        $titleConditions = $queryBuilder->expr()->orX();
 
         foreach ($searchTerms as $key => $term) {
-            $queryBuilder
-                ->orWhere('p.title LIKE :t_'.$key)
-                ->setParameter('t_'.$key, '%'.$term.'%')
-            ;
+            $titleConditions->add('p.title LIKE :t_'.$key);
+            $queryBuilder->setParameter('t_'.$key, '%'.$term.'%');
         }
 
         return $queryBuilder
+            ->where($titleConditions)
+            ->andWhere('p.publishedAt <= :now')
+            ->setParameter('now', new \DateTime())
             ->orderBy('p.publishedAt', 'DESC')
             ->setMaxResults($limit)
             ->getQuery()

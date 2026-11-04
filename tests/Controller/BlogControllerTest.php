@@ -12,7 +12,10 @@
 namespace App\Tests\Controller;
 
 use App\Entity\Post;
+use App\Entity\User;
 use App\Pagination\Paginator;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
@@ -94,5 +97,65 @@ class BlogControllerTest extends WebTestCase
         $this->assertCount(1, $results);
         $this->assertSame('Lorem ipsum dolor sit amet consectetur adipiscing elit', $results[0]['title']);
         $this->assertSame('Jane Doe', $results[0]['author']);
+    }
+
+    public function testUnpublishedPostIsNotShown(): void
+    {
+        $client = static::createClient();
+        $post = $this->createScheduledPost($client);
+
+        $client->request('GET', '/en/blog/posts/'.$post->getSlug());
+
+        $this->assertResponseStatusCodeSame(404);
+    }
+
+    public function testUnpublishedPostIsNotReturnedBySearch(): void
+    {
+        $client = static::createClient();
+        $this->createScheduledPost($client);
+
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => 'Scheduled announcement']);
+
+        $results = json_decode((string) $client->getResponse()->getContent(), true);
+
+        $this->assertResponseHeaderSame('Content-Type', 'application/json');
+        $this->assertSame([], $results);
+    }
+
+    public function testUnpublishedPostCannotBeCommented(): void
+    {
+        $client = static::createClient([], [
+            'PHP_AUTH_USER' => 'john_user',
+            'PHP_AUTH_PW' => 'kitten',
+        ]);
+        $post = $this->createScheduledPost($client);
+
+        $client->request('POST', '/en/blog/comment/'.$post->getSlug().'/new', [
+            'comment' => ['content' => 'Hi, Symfony!'],
+        ]);
+
+        $this->assertResponseStatusCodeSame(404);
+    }
+
+    private function createScheduledPost(KernelBrowser $client): Post
+    {
+        /** @var EntityManagerInterface $entityManager */
+        $entityManager = $client->getContainer()->get(EntityManagerInterface::class);
+
+        /** @var User $author */
+        $author = $entityManager->getRepository(User::class)->findOneBy(['username' => 'jane_admin']);
+
+        $post = new Post();
+        $post->setTitle('Scheduled announcement');
+        $post->setSlug('scheduled-announcement');
+        $post->setSummary('Not public yet');
+        $post->setContent('Secret content of a post scheduled for future publication.');
+        $post->setPublishedAt(new \DateTime('+1 week'));
+        $post->setAuthor($author);
+
+        $entityManager->persist($post);
+        $entityManager->flush();
+
+        return $post;
     }
 }
