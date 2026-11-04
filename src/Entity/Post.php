@@ -49,7 +49,7 @@ class Post
     private ?string $title = null;
 
     /**
-     * @ORM\Column(type="string")
+     * @ORM\Column(type="string", unique=true)
      */
     private ?string $slug = null;
 
