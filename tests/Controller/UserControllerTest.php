@@ -59,7 +59,7 @@ class UserControllerTest extends WebTestCase
 
         $client = static::createClient([], [
             'PHP_AUTH_USER' => 'jane_admin',
-            'PHP_AUTH_PW' => 'kitten',
+            'PHP_AUTH_PW' => $_SERVER['APP_FIXTURES_PASSWORD'],
         ]);
         $client->request('GET', '/en/profile/edit');
         $client->submitForm('Save changes', [
@@ -81,11 +81,11 @@ class UserControllerTest extends WebTestCase
 
         $client = static::createClient([], [
             'PHP_AUTH_USER' => 'jane_admin',
-            'PHP_AUTH_PW' => 'kitten',
+            'PHP_AUTH_PW' => $_SERVER['APP_FIXTURES_PASSWORD'],
         ]);
         $client->request('GET', '/en/profile/change-password');
         $client->submitForm('Save changes', [
-            'change_password[currentPassword]' => 'kitten',
+            'change_password[currentPassword]' => $_SERVER['APP_FIXTURES_PASSWORD'],
             'change_password[newPassword][first]' => $newUserPassword,
             'change_password[newPassword][second]' => $newUserPassword,
         ]);
@@ -95,5 +95,22 @@ class UserControllerTest extends WebTestCase
             Response::HTTP_FOUND,
             'Changing password logout the user.'
         );
+    }
+
+    public function testChangePasswordRefusesPubliclyKnownPassword(): void
+    {
+        $client = static::createClient([], [
+            'PHP_AUTH_USER' => 'jane_admin',
+            'PHP_AUTH_PW' => $_SERVER['APP_FIXTURES_PASSWORD'],
+        ]);
+        $client->request('GET', '/en/profile/change-password');
+        $client->submitForm('Save changes', [
+            'change_password[currentPassword]' => $_SERVER['APP_FIXTURES_PASSWORD'],
+            'change_password[newPassword][first]' => 'kitten',
+            'change_password[newPassword][second]' => 'kitten',
+        ]);
+
+        $this->assertFalse($client->getResponse()->isRedirect());
+        $this->assertSelectorTextContains('form', 'This password is publicly known');
     }
 }

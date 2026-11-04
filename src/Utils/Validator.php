@@ -11,6 +11,7 @@
 
 namespace App\Utils;
 
+use App\Security\DefaultCredentials;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use function Symfony\Component\String\u;
 
@@ -43,6 +44,10 @@ class Validator
 
         if (u($plainPassword)->trim()->length() < 6) {
             throw new InvalidArgumentException('The password must be at least 6 characters long.');
+        }
+
+        if (DefaultCredentials::isDefaultPassword($plainPassword)) {
+            throw new InvalidArgumentException('This password is publicly known and can not be used to sign in.');
         }
 
         return $plainPassword;
