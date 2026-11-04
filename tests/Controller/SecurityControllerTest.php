@@ -18,11 +18,24 @@ use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class SecurityControllerTest extends WebTestCase
 {
+    protected function tearDown(): void
+    {
+        // login throttling counters are stored on disk: don't leak them into other tests
+        if (static::$booted) {
+            $cacheDir = static::getContainer()->getParameter('kernel.cache_dir');
+            \assert(\is_string($cacheDir));
+            (new Filesystem())->remove($cacheDir.'/login_throttling');
+        }
+
+        parent::tearDown();
+    }
+
     public function testLoginPageDoesNotDiscloseCredentials(): void
     {
         $client = static::createClient();
@@ -78,8 +91,6 @@ class SecurityControllerTest extends WebTestCase
     public function testRepeatedFailedLoginsAreThrottled(): void
     {
         $client = static::createClient();
-        // keep the same kernel (and its in-memory rate limiter storage) across requests
-        $client->disableReboot();
 
         for ($i = 0; $i < 5; ++$i) {
             $this->submitLoginForm($client, 'jane_admin', 'wrong-password-'.$i);

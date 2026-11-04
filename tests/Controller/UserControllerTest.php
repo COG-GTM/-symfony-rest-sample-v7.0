@@ -96,4 +96,21 @@ class UserControllerTest extends WebTestCase
             'Changing password logout the user.'
         );
     }
+
+    public function testChangePasswordRefusesPubliclyKnownPassword(): void
+    {
+        $client = static::createClient([], [
+            'PHP_AUTH_USER' => 'jane_admin',
+            'PHP_AUTH_PW' => $_SERVER['APP_FIXTURES_PASSWORD'],
+        ]);
+        $client->request('GET', '/en/profile/change-password');
+        $client->submitForm('Save changes', [
+            'change_password[currentPassword]' => $_SERVER['APP_FIXTURES_PASSWORD'],
+            'change_password[newPassword][first]' => 'kitten',
+            'change_password[newPassword][second]' => 'kitten',
+        ]);
+
+        $this->assertFalse($client->getResponse()->isRedirect());
+        $this->assertSelectorTextContains('form', 'This password is publicly known');
+    }
 }

@@ -37,6 +37,9 @@ services:
     App\DataFixtures\AppFixtures:
         $userPassword: '%env(default::APP_FIXTURES_PASSWORD)%'
 
+    App\EventSubscriber\LoginThrottlingSubscriber:
+        $storageDir: '%kernel.cache_dir%/login_throttling'
+
 when@test:
     services:
         test.user_password_hasher:
