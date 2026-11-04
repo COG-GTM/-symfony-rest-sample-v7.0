@@ -11,7 +11,12 @@
 
 namespace App\Tests\Controller\Admin;
 
+use App\Entity\Post;
 use App\Repository\PostRepository;
+use Doctrine\DBAL\Connection;
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Event\OnFlushEventArgs;
+use Doctrine\ORM\Events;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -125,6 +130,101 @@ class BlogControllerTest extends WebTestCase
 
         $this->assertSelectorTextSame('form .form-group.has-error label', 'Title');
         $this->assertSelectorTextContains('form .form-group.has-error .help-block', 'This title was already used in another blog post, but they must be unique.');
+    }
+
+    /**
+     * A unique violation that is not about the slug (here, a tag created by a
+     * concurrent request) must not be reported as a duplicated title.
+     */
+    public function testAdminNewPostWithConcurrentlyCreatedTagIsNotReportedAsDuplicatedTitle(): void
+    {
+        $tagName = 'tag-'.mt_rand();
+
+        $client = static::createClient([], [
+            'PHP_AUTH_USER' => 'jane_admin',
+            'PHP_AUTH_PW' => 'kitten',
+        ]);
+        $client->disableReboot();
+        $crawler = $client->request('GET', '/en/admin/post/new');
+
+        /** @var EntityManagerInterface $entityManager */
+        $entityManager = static::getContainer()->get('doctrine.orm.entity_manager');
+        $entityManager->getEventManager()->addEventListener([Events::onFlush], new class($tagName) {
+            public function __construct(private string $tagName)
+            {
+            }
+
+            public function onFlush(OnFlushEventArgs $args): void
+            {
+                $args->getEntityManager()->getConnection()->insert('symfony_demo_tag', ['name' => $this->tagName]);
+            }
+        });
+
+        $client->submit($crawler->selectButton('Create post')->form([
+            'post[title]' => 'Blog Post Title '.mt_rand(),
+            'post[summary]' => $this->generateRandomString(255),
+            'post[content]' => $this->generateRandomString(1024),
+            'post[tags]' => $tagName,
+        ]));
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_INTERNAL_SERVER_ERROR);
+        $this->assertSelectorNotExists('form .form-group.has-error');
+    }
+
+    /**
+     * Simulates two admins saving posts with the same title at the same time:
+     * both pass the UniqueEntity validation and the other post is written right
+     * before this one is flushed. The database must reject the duplicated slug
+     * and the form must show the validation error instead of a server error.
+     */
+    public function testAdminNewPostWithConcurrentlyDuplicatedSlug(): void
+    {
+        $postTitle = 'Blog Post Title '.mt_rand();
+
+        $client = static::createClient([], [
+            'PHP_AUTH_USER' => 'jane_admin',
+            'PHP_AUTH_PW' => 'kitten',
+        ]);
+        $client->disableReboot();
+        $crawler = $client->request('GET', '/en/admin/post/new');
+
+        /** @var EntityManagerInterface $entityManager */
+        $entityManager = static::getContainer()->get('doctrine.orm.entity_manager');
+        $entityManager->getEventManager()->addEventListener([Events::onFlush], new class() {
+            public function onFlush(OnFlushEventArgs $args): void
+            {
+                $entityManager = $args->getEntityManager();
+                foreach ($entityManager->getUnitOfWork()->getScheduledEntityInsertions() as $entity) {
+                    if ($entity instanceof Post) {
+                        $entityManager->getConnection()->insert('symfony_demo_post', [
+                            'author_id' => 2,
+                            'title' => (string) $entity->getTitle(),
+                            'slug' => (string) $entity->getSlug(),
+                            'summary' => 'Concurrent post',
+                            'content' => 'Concurrent post content',
+                            'published_at' => '2021-01-01 00:00:00',
+                        ]);
+                    }
+                }
+            }
+        });
+
+        $client->submit($crawler->selectButton('Create post')->form([
+            'post[title]' => $postTitle,
+            'post[summary]' => $this->generateRandomString(255),
+            'post[content]' => $this->generateRandomString(1024),
+        ]));
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorTextSame('form .form-group.has-error label', 'Title');
+        $this->assertSelectorTextContains('form .form-group.has-error .help-block', 'This title was already used in another blog post, but they must be unique.');
+
+        /** @var Connection $connection */
+        $connection = static::getContainer()->get('doctrine.dbal.default_connection');
+        $this->assertSame(
+            ['Concurrent post'],
+            $connection->fetchFirstColumn('SELECT summary FROM symfony_demo_post WHERE title = ?', [$postTitle])
+        );
     }
 
     public function testAdminShowPost(): void

@@ -15,13 +15,17 @@ use App\Entity\Post;
 use App\Form\PostType;
 use App\Repository\PostRepository;
 use App\Security\PostVoter;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\Form\FormError;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Controller used to manage blog contents in the backend.
@@ -38,6 +42,8 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route('/admin/post'), IsGranted('ROLE_ADMIN')]
 class BlogController extends AbstractController
 {
+    private const POST_SLUG_UNIQUE_INDEX = 'UNIQ_58A92E65989D9B62';
+
     /**
      * Lists all Post entities.
      *
@@ -68,7 +74,7 @@ class BlogController extends AbstractController
      * it responds to all methods).
      */
     #[Route('/new', methods: ['GET', 'POST'], name: 'admin_post_new')]
-    public function new(Request $request, EntityManagerInterface $entityManager): Response
+    public function new(Request $request, EntityManagerInterface $entityManager, TranslatorInterface $translator): Response
     {
         $post = new Post();
         $post->setAuthor($this->getUser());
@@ -84,20 +90,24 @@ class BlogController extends AbstractController
         // However, we explicitly add it to improve code readability.
         // See https://symfony.com/doc/current/forms.html#processing-forms
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($post);
-            $entityManager->flush();
+            try {
+                $entityManager->persist($post);
+                $entityManager->flush();
 
-            // Flash messages are used to notify the user about the result of the
-            // actions. They are deleted automatically from the session as soon
-            // as they are accessed.
-            // See https://symfony.com/doc/current/controller.html#flash-messages
-            $this->addFlash('success', 'post.created_successfully');
+                // Flash messages are used to notify the user about the result of the
+                // actions. They are deleted automatically from the session as soon
+                // as they are accessed.
+                // See https://symfony.com/doc/current/controller.html#flash-messages
+                $this->addFlash('success', 'post.created_successfully');
 
-            if ($form->get('saveAndCreateNew')->isClicked()) {
-                return $this->redirectToRoute('admin_post_new');
+                if ($form->get('saveAndCreateNew')->isClicked()) {
+                    return $this->redirectToRoute('admin_post_new');
+                }
+
+                return $this->redirectToRoute('admin_post_index');
+            } catch (UniqueConstraintViolationException $exception) {
+                $this->addDuplicatedSlugError($exception, $form, $translator);
             }
-
-            return $this->redirectToRoute('admin_post_index');
         }
 
         return $this->render('admin/blog/new.html.twig', [
@@ -126,16 +136,20 @@ class BlogController extends AbstractController
      */
     #[Route('/{id<\d+>}/edit', methods: ['GET', 'POST'], name: 'admin_post_edit')]
     #[IsGranted('edit', subject: 'post', message: 'Posts can only be edited by their authors.')]
-    public function edit(Request $request, Post $post, EntityManagerInterface $entityManager): Response
+    public function edit(Request $request, Post $post, EntityManagerInterface $entityManager, TranslatorInterface $translator): Response
     {
         $form = $this->createForm(PostType::class, $post);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->flush();
-            $this->addFlash('success', 'post.updated_successfully');
+            try {
+                $entityManager->flush();
+                $this->addFlash('success', 'post.updated_successfully');
 
-            return $this->redirectToRoute('admin_post_edit', ['id' => $post->getId()]);
+                return $this->redirectToRoute('admin_post_edit', ['id' => $post->getId()]);
+            } catch (UniqueConstraintViolationException $exception) {
+                $this->addDuplicatedSlugError($exception, $form, $translator);
+            }
         }
 
         return $this->render('admin/blog/edit.html.twig', [
@@ -166,5 +180,21 @@ class BlogController extends AbstractController
         $this->addFlash('success', 'post.deleted_successfully');
 
         return $this->redirectToRoute('admin_post_index');
+    }
+
+    /**
+     * The UniqueEntity constraint on Post only checks the slug before saving, so
+     * two concurrent requests can both pass it. The unique index on the slug
+     * column rejects the second write; report it like the validator would.
+     * Other unique violations (e.g. a tag created concurrently) are rethrown.
+     */
+    private function addDuplicatedSlugError(UniqueConstraintViolationException $exception, FormInterface $form, TranslatorInterface $translator): void
+    {
+        $message = mb_strtolower($exception->getMessage());
+        if (!str_contains($message, 'symfony_demo_post.slug') && !str_contains($message, mb_strtolower(self::POST_SLUG_UNIQUE_INDEX))) {
+            throw $exception;
+        }
+
+        $form->get('title')->addError(new FormError($translator->trans('post.slug_unique', [], 'validators')));
     }
 }
