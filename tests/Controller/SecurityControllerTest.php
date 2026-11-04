@@ -65,6 +65,25 @@ class SecurityControllerTest extends WebTestCase
         $this->assertResponseRedirects('http://localhost/en/blog/');
     }
 
+    public function testLoginWithoutTargetFallsBackToDefaultTargetPath(): void
+    {
+        $client = static::createClient();
+        $crawler = $client->request('GET', '/en/login');
+
+        $session = $client->getRequest()->getSession();
+        $session->remove('_security.main.target_path');
+        $session->save();
+
+        $form = $crawler->filter('form[action="/en/login"]')->form([
+            '_username' => 'jane_admin',
+            '_password' => 'kitten',
+            '_target_path' => '',
+        ]);
+        $client->submit($form);
+
+        $this->assertResponseRedirects('http://localhost/en/blog/');
+    }
+
     /**
      * @return \Generator<array{string}>
      */
