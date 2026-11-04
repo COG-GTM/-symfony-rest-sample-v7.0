@@ -37,6 +37,6 @@ final class LocalTargetPath
 
     public static function sanitize(mixed $path): string
     {
-        return self::isLocal($path) ? $path : '';
+        return \is_string($path) && self::isLocal($path) ? $path : '';
     }
 }

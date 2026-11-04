@@ -65,6 +65,9 @@ class SecurityControllerTest extends WebTestCase
         $this->assertResponseRedirects('http://localhost/en/blog/');
     }
 
+    /**
+     * @return \Generator<array{string}>
+     */
     public function getExternalTargets(): \Generator
     {
         yield ['http:evil.example'];
@@ -82,8 +85,8 @@ class SecurityControllerTest extends WebTestCase
         $form = $crawler->filter('form[action="/en/login"]')->form([
             '_username' => 'jane_admin',
             '_password' => 'kitten',
+            '_target_path' => $targetPath,
         ]);
-        $form['_target_path']->setValue($targetPath);
 
         $client->submit($form);
     }

@@ -25,6 +25,9 @@ class LocalTargetPathTest extends TestCase
         $this->assertSame($path, LocalTargetPath::sanitize($path));
     }
 
+    /**
+     * @return \Generator<array{string}>
+     */
     public function getLocalPaths(): \Generator
     {
         yield ['/'];
@@ -43,6 +46,9 @@ class LocalTargetPathTest extends TestCase
         $this->assertSame('', LocalTargetPath::sanitize($path));
     }
 
+    /**
+     * @return \Generator<array{mixed}>
+     */
     public function getExternalTargets(): \Generator
     {
         yield [null];
