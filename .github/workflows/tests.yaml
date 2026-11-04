@@ -15,7 +15,7 @@ env:
     # Passing an actionLevel (int|string) as constructor's 3rd argument of
     # "Symfony\Bridge\Monolog\Handler\FingersCrossed\HttpCodeActivationStrategy"
     # is deprecated, "Monolog\Handler\FingersCrossed\ActivationStrategyInterface" expected.
-    SYMFONY_DEPRECATIONS_HELPER: 40
+    SYMFONY_DEPRECATIONS_HELPER: "max[self]=0&max[direct]=0"
 
 jobs:
     test:
@@ -26,14 +26,14 @@ jobs:
         strategy:
             matrix:
                 operating-system: ['ubuntu-latest', 'windows-latest', 'macos-latest']
-                php-version: ['8.0']
+                php-version: ['8.1']
 
         steps:
             - name: "Checkout code"
-              uses: actions/checkout@v2.3.3
+              uses: actions/checkout@v4
 
             - name: "Install PHP with extensions"
-              uses: shivammathur/setup-php@2.7.0
+              uses: shivammathur/setup-php@v2
               with:
                   coverage: "none"
                   extensions: "intl, mbstring, pdo_sqlite"
@@ -45,19 +45,22 @@ jobs:
 
             - name: "Set composer cache directory"
               id: composer-cache
-              run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+              shell: bash
+              run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
 
             - name: "Cache composer"
-              uses: actions/cache@v2.1.2
+              uses: actions/cache@v4
               with:
                   path: ${{ steps.composer-cache.outputs.dir }}
                   key: ${{ runner.os }}-${{ matrix.php-version }}-composer-${{ hashFiles('composer.json') }}
                   restore-keys: ${{ runner.os }}-${{ matrix.php-version }}-composer-
 
             - name: "Require symfony/flex"
-              run: composer global require --no-progress --no-scripts --no-plugins symfony/flex
+              run: |
+                  composer global config --no-plugins allow-plugins.symfony/flex true
+                  composer global require --no-progress --no-scripts --no-plugins symfony/flex
 
-            - run: composer update
+            - run: composer update --no-interaction --no-progress
 
             - name: "Install PHPUnit"
               run: vendor/bin/simple-phpunit install

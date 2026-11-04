@@ -13,6 +13,7 @@ namespace App\Command;
 
 use App\Entity\User;
 use App\Repository\UserRepository;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -37,11 +38,9 @@ use Symfony\Component\Mime\Email;
  *
  * @author Javier Eguiluz <javier.eguiluz@gmail.com>
  */
+#[AsCommand(name: 'app:list-users')]
 class ListUsersCommand extends Command
 {
-    // a good practice is to use the 'app:' prefix to group all your custom application commands
-    protected static $defaultName = 'app:list-users';
-
     public function __construct(
         private MailerInterface $mailer,
         private string $emailSender,
