@@ -13,7 +13,11 @@ namespace App\Tests\Controller;
 
 use App\Entity\Post;
 use App\Pagination\Paginator;
+use App\Repository\PostRepository;
+use Symfony\Bridge\Doctrine\DataCollector\DoctrineDataCollector;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpKernel\Profiler\Profile;
 
 /**
  * Functional test for the controllers defined inside BlogController.
@@ -94,5 +98,97 @@ class BlogControllerTest extends WebTestCase
         $this->assertCount(1, $results);
         $this->assertSame('Lorem ipsum dolor sit amet consectetur adipiscing elit', $results[0]['title']);
         $this->assertSame('Jane Doe', $results[0]['author']);
+    }
+
+    public function testAjaxSearchClampsResultLimit(): void
+    {
+        $client = static::createClient();
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => 'lorem ipsum dolor sit amet consectetur adipiscing elit', 'l' => 100000]);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertLessThanOrEqual(PostRepository::MAX_SEARCH_RESULTS, \count($this->getSearchResults($client)));
+
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => 'lorem', 'l' => -5]);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertCount(1, $this->getSearchResults($client));
+    }
+
+    public function testAjaxSearchIgnoresTermsBeyondLimit(): void
+    {
+        $client = static::createClient();
+        $fillerTerms = array_map(static fn (int $i): string => 'zz'.$i, range(1, PostRepository::MAX_SEARCH_TERMS));
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => implode(' ', $fillerTerms).' lorem']);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSame([], $this->getSearchResults($client));
+    }
+
+    public function testAjaxSearchTreatsLikeWildcardsLiterally(): void
+    {
+        $client = static::createClient();
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => '%% __', 'l' => 'abc']);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSame([], $this->getSearchResults($client));
+    }
+
+    public function testAjaxSearchIgnoresNonNumericLimit(): void
+    {
+        $client = static::createClient();
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => 'lorem', 'l' => 'abc']);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertCount(1, $this->getSearchResults($client));
+    }
+
+    public function testAjaxSearchIgnoresQueryBeyondMaxLength(): void
+    {
+        $client = static::createClient();
+        $padding = str_repeat('z', PostRepository::MAX_SEARCH_QUERY_LENGTH);
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => $padding.' lorem']);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSame([], $this->getSearchResults($client));
+    }
+
+    public function testAjaxSearchWithManyTermsBindsAtMostMaxSearchTerms(): void
+    {
+        $client = static::createClient();
+        $client->enableProfiler();
+        $terms = array_map(static fn (int $i): string => base_convert((string) ($i + 36), 10, 36), range(1, 1000));
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => implode(' ', $terms)]);
+
+        $this->assertResponseIsSuccessful();
+
+        $profile = $client->getProfile();
+        \assert($profile instanceof Profile);
+        $collector = $profile->getCollector('db');
+        \assert($collector instanceof DoctrineDataCollector);
+
+        $searchQueries = [];
+        foreach ($collector->getQueries() as $connectionQueries) {
+            \assert(\is_array($connectionQueries));
+            foreach ($connectionQueries as $query) {
+                \assert(\is_array($query) && \is_string($query['sql']));
+                if (str_contains($query['sql'], ' LIKE ')) {
+                    $searchQueries[] = $query['sql'];
+                }
+            }
+        }
+
+        $this->assertCount(1, $searchQueries);
+        $this->assertLessThanOrEqual(PostRepository::MAX_SEARCH_TERMS, mb_substr_count($searchQueries[0], '?'));
+    }
+
+    /**
+     * @return array<mixed>
+     */
+    private function getSearchResults(KernelBrowser $client): array
+    {
+        $results = json_decode((string) $client->getResponse()->getContent(), true);
+        \assert(\is_array($results));
+
+        return $results;
     }
 }
