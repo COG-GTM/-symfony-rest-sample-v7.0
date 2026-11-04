@@ -103,7 +103,7 @@ class BlogControllerTest extends WebTestCase
         $email = $this->getMailerMessage();
         \assert($email instanceof Email);
         $this->assertMatchesRegularExpression(
-            '{href="http://localhost:8000/en/blog/posts/[^"#]+#comment_\\d+"}',
+            '{href="https://localhost:8000/en/blog/posts/[^"#]+#comment_\\d+"}',
             (string) $email->getHtmlBody()
         );
     }
