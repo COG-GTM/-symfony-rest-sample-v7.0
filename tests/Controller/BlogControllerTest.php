@@ -162,9 +162,9 @@ class BlogControllerTest extends WebTestCase
         $this->assertResponseIsSuccessful();
 
         $profile = $client->getProfile();
-        $this->assertInstanceOf(Profile::class, $profile);
+        \assert($profile instanceof Profile);
         $collector = $profile->getCollector('db');
-        $this->assertInstanceOf(DoctrineDataCollector::class, $collector);
+        \assert($collector instanceof DoctrineDataCollector);
 
         $searchQueries = [];
         foreach ($collector->getQueries() as $connectionQueries) {
