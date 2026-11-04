@@ -15,7 +15,7 @@ env:
     # Passing an actionLevel (int|string) as constructor's 3rd argument of
     # "Symfony\Bridge\Monolog\Handler\FingersCrossed\HttpCodeActivationStrategy"
     # is deprecated, "Monolog\Handler\FingersCrossed\ActivationStrategyInterface" expected.
-    SYMFONY_DEPRECATIONS_HELPER: 40
+    SYMFONY_DEPRECATIONS_HELPER: "max[self]=0&max[direct]=0"
 
 jobs:
     test:
