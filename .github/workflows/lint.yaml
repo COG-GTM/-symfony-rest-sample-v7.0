@@ -41,12 +41,15 @@ jobs:
                   php-version: ${{ matrix.php-version }}
                   tools: composer:v2
 
+            - name: "Pin Composer to 2.2 LTS (lockfile uses symfony/flex 1.x)"
+              run: composer self-update --2.2
+
             - name: "Set composer cache directory"
               id: composer-cache
               run: echo "::set-output name=dir::$(composer config cache-files-dir)"
 
             - name: "Cache composer"
-              uses: actions/cache@v2.1.2
+              uses: actions/cache@v4
               with:
                   path: ${{ steps.composer-cache.outputs.dir }}
                   key: ${{ runner.os }}-${{ matrix.php-version }}-composer-${{ hashFiles('composer.lock') }}
@@ -89,7 +92,7 @@ jobs:
 
             - name: Check if any dependencies are compromised
               if: always() && steps.install.outcome == 'success'
-              run: /home/runner/.symfony/bin/symfony check:security
+              run: PATH="$HOME/.symfony5/bin:$HOME/.symfony/bin:$PATH" symfony check:security
 
             - name: Run PHPStan
               if: always() && steps.install.outcome == 'success'
