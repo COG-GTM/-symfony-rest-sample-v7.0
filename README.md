@@ -52,6 +52,8 @@ deploy: it fails when any user still has that password stored.
 
 Login attempts are throttled (`App\EventSubscriber\LoginThrottlingSubscriber`):
 5 attempts per username and client IP, and 50 per client IP, per minute.
+Counters are files in `var/cache/<env>/login_throttling` (locked on every update), so
+they are per server: share that directory if the application runs on several servers.
 
 Usage
 -----

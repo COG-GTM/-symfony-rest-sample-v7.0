@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace App\EventSubscriber;
 
-use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -26,8 +25,10 @@ use Symfony\Component\Security\Http\Event\LoginSuccessEvent;
  * Limits login attempts per username + client IP, and per client IP, within a
  * fixed time window, so passwords can't be guessed at full speed.
  *
- * Every authentication attempt (login form or HTTP Basic) consumes one attempt;
- * a successful login resets the username + IP counter.
+ * Every authentication attempt (login form or HTTP Basic) consumes one attempt
+ * before the password is checked; a successful login gives it back and resets
+ * the username + IP counter. Counters are files updated under an exclusive
+ * lock, so parallel requests can't bypass the limit on a single server.
  */
 class LoginThrottlingSubscriber implements EventSubscriberInterface
 {
@@ -36,8 +37,8 @@ class LoginThrottlingSubscriber implements EventSubscriberInterface
     public const INTERVAL_SECONDS = 60;
 
     public function __construct(
-        private CacheItemPoolInterface $cache,
         private RequestStack $requestStack,
+        private string $storageDir,
     ) {
     }
 
@@ -64,8 +65,8 @@ class LoginThrottlingSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $userAttempts = $this->consume($this->userKey($badge->getUserIdentifier(), $request));
-        $ipAttempts = $this->consume($this->ipKey($request));
+        $userAttempts = $this->update($this->userKey($badge->getUserIdentifier(), $request), static fn (int $attempts): int => $attempts + 1);
+        $ipAttempts = $this->update($this->ipKey($request), static fn (int $attempts): int => $attempts + 1);
 
         if ($userAttempts > self::MAX_ATTEMPTS || $ipAttempts > self::MAX_ATTEMPTS_PER_IP) {
             throw new TooManyLoginAttemptsAuthenticationException((int) ceil(self::INTERVAL_SECONDS / 60));
@@ -74,39 +75,62 @@ class LoginThrottlingSubscriber implements EventSubscriberInterface
 
     public function onLoginSuccess(LoginSuccessEvent $event): void
     {
-        $this->cache->deleteItem($this->userKey($event->getUser()->getUserIdentifier(), $event->getRequest()));
+        $request = $event->getRequest();
+        $this->update($this->userKey($event->getUser()->getUserIdentifier(), $request), static fn (int $attempts): int => 0);
+        $this->update($this->ipKey($request), static fn (int $attempts): int => max(0, $attempts - 1));
     }
 
-    private function consume(string $key): int
+    /**
+     * Atomically applies $change to the attempts counted in the current window
+     * and returns the new count.
+     *
+     * @param callable(int): int $change
+     */
+    private function update(string $key, callable $change): int
     {
-        $now = time();
-        $start = $now;
-        $attempts = 0;
-
-        $item = $this->cache->getItem($key);
-        $stored = $item->isHit() ? $item->get() : null;
-        $storedStart = \is_array($stored) ? ($stored['start'] ?? null) : null;
-        $storedAttempts = \is_array($stored) ? ($stored['attempts'] ?? null) : null;
-        if (\is_int($storedStart) && \is_int($storedAttempts) && $storedStart + self::INTERVAL_SECONDS > $now) {
-            $start = $storedStart;
-            $attempts = $storedAttempts;
+        if (!is_dir($this->storageDir) && !@mkdir($this->storageDir, 0770, true) && !is_dir($this->storageDir)) {
+            throw new \RuntimeException(sprintf('Unable to create the "%s" directory.', $this->storageDir));
         }
 
-        ++$attempts;
-        $item->set(['start' => $start, 'attempts' => $attempts]);
-        $item->expiresAfter($start + self::INTERVAL_SECONDS - $now);
-        $this->cache->save($item);
+        $handle = fopen($this->storageDir.'/'.$key, 'c+');
+        if (false === $handle || !flock($handle, \LOCK_EX)) {
+            throw new \RuntimeException(sprintf('Unable to lock the login throttling counter "%s".', $key));
+        }
 
-        return $attempts;
+        try {
+            $now = time();
+            $start = $now;
+            $attempts = 0;
+
+            $stored = json_decode((string) stream_get_contents($handle), true);
+            $storedStart = \is_array($stored) ? ($stored['start'] ?? null) : null;
+            $storedAttempts = \is_array($stored) ? ($stored['attempts'] ?? null) : null;
+            if (\is_int($storedStart) && \is_int($storedAttempts) && $storedStart + self::INTERVAL_SECONDS > $now) {
+                $start = $storedStart;
+                $attempts = $storedAttempts;
+            }
+
+            $attempts = $change($attempts);
+
+            ftruncate($handle, 0);
+            rewind($handle);
+            fwrite($handle, (string) json_encode(['start' => $start, 'attempts' => $attempts]));
+            fflush($handle);
+
+            return $attempts;
+        } finally {
+            flock($handle, \LOCK_UN);
+            fclose($handle);
+        }
     }
 
     private function userKey(string $username, Request $request): string
     {
-        return 'login_throttling.user.'.hash('sha256', mb_strtolower($username).'|'.$request->getClientIp());
+        return 'user-'.hash('sha256', mb_strtolower($username).'|'.$request->getClientIp());
     }
 
     private function ipKey(Request $request): string
     {
-        return 'login_throttling.ip.'.hash('sha256', (string) $request->getClientIp());
+        return 'ip-'.hash('sha256', (string) $request->getClientIp());
     }
 }

@@ -65,6 +65,13 @@ class ValidatorTest extends TestCase
         $this->validator->validatePassword('12345');
     }
 
+    public function testValidatePasswordPubliclyKnown(): void
+    {
+        $this->expectException('Exception');
+        $this->expectExceptionMessage('This password is publicly known and can not be used to sign in.');
+        $this->validator->validatePassword('kitten');
+    }
+
     public function testValidateEmail(): void
     {
         $test = '@';
