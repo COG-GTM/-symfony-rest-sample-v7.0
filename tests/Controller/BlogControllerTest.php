@@ -55,6 +55,30 @@ class BlogControllerTest extends WebTestCase
         );
     }
 
+    public function testRssDoesNotExposeAuthorEmails(): void
+    {
+        $client = static::createClient();
+        $client->request('GET', '/en/blog/rss.xml');
+
+        $this->assertResponseIsSuccessful();
+
+        $content = (string) $client->getResponse()->getContent();
+        $this->assertStringNotContainsString('<author>', $content);
+        $this->assertDoesNotMatchRegularExpression(
+            '/[^\s<>"]+@[^\s<>"]+\.[a-z]{2,}/i',
+            $content,
+            'The RSS feed must not contain email addresses.'
+        );
+
+        $xml = new \SimpleXMLElement($content);
+        $xml->registerXPathNamespace('dc', 'http://purl.org/dc/elements/1.1/');
+        $creators = $xml->xpath('//item/dc:creator');
+        $this->assertCount(Paginator::PAGE_SIZE, $creators);
+        foreach ($creators as $creator) {
+            $this->assertMatchesRegularExpression('/\S/', (string) $creator);
+        }
+    }
+
     /**
      * This test changes the database contents by creating a new comment. However,
      * thanks to the DAMADoctrineTestBundle and its PHPUnit listener, all changes
