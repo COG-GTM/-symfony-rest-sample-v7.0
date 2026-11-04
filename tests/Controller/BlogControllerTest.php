@@ -14,8 +14,10 @@ namespace App\Tests\Controller;
 use App\Entity\Post;
 use App\Pagination\Paginator;
 use App\Repository\PostRepository;
+use Symfony\Bridge\Doctrine\DataCollector\DoctrineDataCollector;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpKernel\Profiler\Profile;
 
 /**
  * Functional test for the controllers defined inside BlogController.
@@ -160,10 +162,15 @@ class BlogControllerTest extends WebTestCase
         $this->assertResponseIsSuccessful();
 
         $profile = $client->getProfile();
-        \assert(false !== $profile);
+        $this->assertInstanceOf(Profile::class, $profile);
+        $collector = $profile->getCollector('db');
+        $this->assertInstanceOf(DoctrineDataCollector::class, $collector);
+
         $searchQueries = [];
-        foreach ($profile->getCollector('db')->getQueries() as $connectionQueries) {
+        foreach ($collector->getQueries() as $connectionQueries) {
+            \assert(\is_array($connectionQueries));
             foreach ($connectionQueries as $query) {
+                \assert(\is_array($query) && \is_string($query['sql']));
                 if (str_contains($query['sql'], ' LIKE ')) {
                     $searchQueries[] = $query['sql'];
                 }
