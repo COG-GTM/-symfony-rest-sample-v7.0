@@ -14,6 +14,7 @@ namespace App\Tests\Controller;
 use App\Entity\Post;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\UriSigner;
 
 /**
  * Functional test that implements a "smoke test" of all the public and secure
@@ -76,6 +77,23 @@ class DefaultControllerTest extends WebTestCase
             Response::HTTP_FOUND,
             sprintf('The %s secure URL redirects to the login form.', $url)
         );
+    }
+
+    /**
+     * The /_fragment endpoint executes any controller named in a URL signed with
+     * kernel.secret, so it must not be exposed even to correctly signed requests.
+     */
+    public function testFragmentEndpointIsDisabled(): void
+    {
+        $client = static::createClient();
+        $signer = new UriSigner($client->getContainer()->getParameter('kernel.secret'));
+        $path = http_build_query([
+            '_controller' => 'Symfony\\Bundle\\FrameworkBundle\\Controller\\TemplateController::templateAction',
+            'template' => 'blog/about.html.twig',
+        ]);
+        $client->request('GET', $signer->sign('http://localhost/_fragment?'.http_build_query(['_path' => $path])));
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
     }
 
     public function getPublicUrls(): ?\Generator

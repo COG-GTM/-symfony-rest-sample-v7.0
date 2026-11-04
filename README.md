@@ -30,8 +30,15 @@ $ composer create-project symfony/symfony-demo my_project
 Usage
 -----
 
-There's no need to configure anything to run the application. If you have
-[installed Symfony][4] binary, run this command:
+Before running the application, define a random `APP_SECRET` in a `.env.local`
+file (never commit it; in production use a real environment variable or the
+Symfony secrets vault):
+
+```bash
+$ echo "APP_SECRET=$(php -r 'echo bin2hex(random_bytes(32));')" >> .env.local
+```
+
+If you have [installed Symfony][4] binary, run this command:
 
 ```bash
 $ cd my_project/
