@@ -171,7 +171,7 @@ class BlogControllerTest extends WebTestCase
         }
 
         $this->assertCount(1, $searchQueries);
-        $this->assertLessThanOrEqual(PostRepository::MAX_SEARCH_TERMS, substr_count($searchQueries[0], '?'));
+        $this->assertLessThanOrEqual(PostRepository::MAX_SEARCH_TERMS, mb_substr_count($searchQueries[0], '?'));
     }
 
     /**
