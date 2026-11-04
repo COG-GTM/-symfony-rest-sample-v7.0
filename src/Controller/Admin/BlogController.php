@@ -190,8 +190,8 @@ class BlogController extends AbstractController
      */
     private function addDuplicatedSlugError(UniqueConstraintViolationException $exception, FormInterface $form, TranslatorInterface $translator): void
     {
-        $message = strtolower($exception->getMessage());
-        if (!str_contains($message, 'symfony_demo_post.slug') && !str_contains($message, strtolower(self::POST_SLUG_UNIQUE_INDEX))) {
+        $message = mb_strtolower($exception->getMessage());
+        if (!str_contains($message, 'symfony_demo_post.slug') && !str_contains($message, mb_strtolower(self::POST_SLUG_UNIQUE_INDEX))) {
             throw $exception;
         }
 
