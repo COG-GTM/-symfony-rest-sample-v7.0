@@ -47,7 +47,8 @@ Apache to run the application.
 ### Application secret
 
 `APP_SECRET` signs URIs, CSRF tokens and remember-me cookies, so it must never
-be committed. The value in `.env` is intentionally empty; `.env.dev` and
+be committed. `.env` does not define it (even an empty value would mask the
+secrets vault); `.env.dev` and
 `.env.test` hold throwaway values that are only loaded in those environments.
 In every other environment (e.g. `APP_ENV=prod`) generate a unique value and
 provide it as a real environment variable, in `.env.local` or via the
