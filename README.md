@@ -30,8 +30,14 @@ $ composer create-project symfony/symfony-demo my_project
 Usage
 -----
 
-There's no need to configure anything to run the application. If you have
-[installed Symfony][4] binary, run this command:
+`composer install` generates a random `APP_SECRET` in the uncommitted
+`.env.local` file for local development. In any other environment, define a
+unique and private `APP_SECRET` (e.g. `php -r "echo bin2hex(random_bytes(32));"`)
+in a real environment variable or in the [secrets vault][5]; never commit it.
+The application refuses to boot when `APP_SECRET` is empty or a value that was
+published in this repository.
+
+If you have [installed Symfony][4] binary, run this command:
 
 ```bash
 $ cd my_project/
@@ -58,3 +64,4 @@ $ ./bin/phpunit
 [2]: https://symfony.com/doc/current/reference/requirements.html
 [3]: https://symfony.com/doc/current/cookbook/configuration/web_server_configuration.html
 [4]: https://symfony.com/download
+[5]: https://symfony.com/doc/current/configuration/secrets.html

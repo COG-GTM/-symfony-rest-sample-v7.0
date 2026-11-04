@@ -59,6 +59,12 @@ security:
     # Easy way to control access for large sections of your site
     # Note: Only the *first* access control that matches will be used
     access_control:
+        # /_fragment runs the controller named in a signed URL. Inline render()
+        # calls don't go through the firewall, so it is only needed by an ESI
+        # gateway cache running on this host. Add your reverse proxy IPs here
+        # if it resolves ESI includes.
+        - { path: '^/_fragment', ips: [127.0.0.1, ::1], roles: PUBLIC_ACCESS }
+        - { path: '^/_fragment', roles: ROLE_NO_ACCESS }
         # this is a catch-all for the admin area
         # additional security lives in the controllers
         - { path: '^/(%app_locales%)/admin', roles: ROLE_ADMIN }
