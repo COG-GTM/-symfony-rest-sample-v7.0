@@ -16,3 +16,13 @@ html_sanitizer:
 
             # Read https://github.com/tgalopin/html-sanitizer/blob/master/docs/3-configuration-reference.md
             # to discover all the available options for each extension.
+
+        # Comments are written by any signed-in user and shown to every visitor, so
+        # they must not embed remote images (which would leak readers' IPs and
+        # trigger requests such as logout on page load).
+        comment:
+            extensions:
+                - 'basic'
+                - 'list'
+                - 'table'
+                - 'code'

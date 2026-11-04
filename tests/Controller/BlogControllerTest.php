@@ -83,6 +83,30 @@ class BlogControllerTest extends WebTestCase
         $this->assertSame('Hi, Symfony!', $newComment);
     }
 
+    public function testNewCommentCannotEmbedRemoteImages(): void
+    {
+        $client = static::createClient([], [
+            'PHP_AUTH_USER' => 'john_user',
+            'PHP_AUTH_PW' => 'kitten',
+        ]);
+        $client->followRedirects();
+
+        $crawler = $client->request('GET', '/en/blog/');
+        $postLink = $crawler->filter('article.post > h2 a')->link();
+
+        $client->click($postLink);
+        $crawler = $client->submitForm('Publish comment', [
+            'comment[content]' => "Look at this ![x](https://example.org/a.png)\n\n"
+                .'<img src="https://example.org/b.png">',
+        ]);
+
+        $newComment = $crawler->filter('.post-comment')->first();
+
+        $this->assertStringContainsString('Look at this', $newComment->text());
+        $this->assertCount(0, $newComment->filter('img'));
+        $this->assertCount(0, $crawler->filter('img[src*="example.org"]'));
+    }
+
     public function testAjaxSearch(): void
     {
         $client = static::createClient();
