@@ -121,4 +121,13 @@ class BlogControllerTest extends WebTestCase
         $this->assertResponseIsSuccessful();
         $this->assertSame([], json_decode($client->getResponse()->getContent(), true));
     }
+
+    public function testAjaxSearchTreatsLikeWildcardsLiterally(): void
+    {
+        $client = static::createClient();
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => '%% __', 'l' => 'abc']);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSame([], json_decode($client->getResponse()->getContent(), true));
+    }
 }
