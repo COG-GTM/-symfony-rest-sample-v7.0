@@ -50,6 +50,9 @@ Logins using the password published by earlier versions of this demo are always
 rejected. Run `php bin/console app:check-default-credentials` as part of your
 deploy: it fails when any user still has that password stored.
 
+Login attempts are throttled (`App\EventSubscriber\LoginThrottlingSubscriber`):
+5 attempts per username and client IP, and 50 per client IP, per minute.
+
 Usage
 -----
 
