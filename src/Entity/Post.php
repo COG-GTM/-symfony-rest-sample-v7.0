@@ -162,7 +162,7 @@ class Post
     /**
      * Posts with a future publication date are scheduled and must stay hidden from the public.
      */
-    public function isPublished(\DateTimeInterface $now = null): bool
+    public function isPublished(?\DateTimeInterface $now = null): bool
     {
         return $this->publishedAt <= ($now ?? new \DateTime());
     }
