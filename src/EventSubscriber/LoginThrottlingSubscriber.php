@@ -46,8 +46,9 @@ class LoginThrottlingSubscriber implements EventSubscriberInterface
     public static function getSubscribedEvents(): array
     {
         return [
-            // runs before the password is checked
-            CheckPassportEvent::class => ['onCheckPassport', 2080],
+            // after UserProviderListener (2048) gives the badge its user loader,
+            // before the user checker (256) and the password check (0)
+            CheckPassportEvent::class => ['onCheckPassport', 1024],
             LoginSuccessEvent::class => 'onLoginSuccess',
         ];
     }
