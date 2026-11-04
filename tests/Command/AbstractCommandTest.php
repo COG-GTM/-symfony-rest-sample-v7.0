@@ -23,8 +23,9 @@ abstract class AbstractCommandTest extends KernelTestCase
      *
      * @param array $arguments All the arguments passed when executing the command
      * @param array $inputs    The (optional) answers given to the command when it asks for the value of the missing arguments
+     * @param array<string, mixed> $options The (optional) CommandTester options (e.g. ['interactive' => false])
      */
-    protected function executeCommand(array $arguments, array $inputs = []): CommandTester
+    protected function executeCommand(array $arguments, array $inputs = [], array $options = []): CommandTester
     {
         self::bootKernel();
 
@@ -34,7 +35,7 @@ abstract class AbstractCommandTest extends KernelTestCase
 
         $commandTester = new CommandTester($command);
         $commandTester->setInputs($inputs);
-        $commandTester->execute($arguments);
+        $commandTester->execute($arguments, $options);
 
         return $commandTester;
     }

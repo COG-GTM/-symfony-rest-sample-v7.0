@@ -31,17 +31,7 @@ parameters:
 			path: src/Command/AddUserCommand.php
 
 		-
-			message: "#^Parameter \\#1 \\$string of function Symfony\\\\Component\\\\String\\\\u expects string\\|null, mixed given\\.$#"
-			count: 1
-			path: src/Command/AddUserCommand.php
-
-		-
 			message: "#^Parameter \\#1 \\$username of method App\\\\Entity\\\\User\\:\\:setUsername\\(\\) expects string, mixed given\\.$#"
-			count: 1
-			path: src/Command/AddUserCommand.php
-
-		-
-			message: "#^Parameter \\#2 \\$plainPassword of method Symfony\\\\Component\\\\PasswordHasher\\\\Hasher\\\\UserPasswordHasherInterface\\:\\:hashPassword\\(\\) expects string, mixed given\\.$#"
 			count: 1
 			path: src/Command/AddUserCommand.php
 

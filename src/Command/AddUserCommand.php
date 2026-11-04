@@ -20,6 +20,7 @@ use Symfony\Component\Console\Exception\RuntimeException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Input\StreamableInputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -38,6 +39,10 @@ use function Symfony\Component\String\u;
  *
  *     $ php bin/console app:add-user -vv
  *
+ * The password is never accepted as a command-line argument (it would leak
+ * through the shell history and the process list). It is asked interactively
+ * or read from the standard input with the --password-stdin option.
+ *
  * See https://symfony.com/doc/current/console.html
  *
  * We use the default services.yaml configuration, so command classes are registered as services.
@@ -53,6 +58,8 @@ class AddUserCommand extends Command
     protected static $defaultName = 'app:add-user';
 
     private SymfonyStyle $io;
+
+    private ?string $plainPassword = null;
 
     public function __construct(
         private EntityManagerInterface $entityManager,
@@ -74,10 +81,10 @@ class AddUserCommand extends Command
             // commands can optionally define arguments and/or options (mandatory and optional)
             // see https://symfony.com/doc/current/components/console/console_arguments.html
             ->addArgument('username', InputArgument::OPTIONAL, 'The username of the new user')
-            ->addArgument('password', InputArgument::OPTIONAL, 'The plain password of the new user')
             ->addArgument('email', InputArgument::OPTIONAL, 'The email of the new user')
             ->addArgument('full-name', InputArgument::OPTIONAL, 'The full name of the new user')
             ->addOption('admin', null, InputOption::VALUE_NONE, 'If set, the user is created as an administrator')
+            ->addOption('password-stdin', null, InputOption::VALUE_NONE, 'Read the password of the new user from the standard input')
         ;
     }
 
@@ -91,6 +98,11 @@ class AddUserCommand extends Command
         // apply a consistent look to the commands of your application.
         // See https://symfony.com/doc/current/console/style.html
         $this->io = new SymfonyStyle($input, $output);
+        $this->plainPassword = null;
+
+        if ($input->getOption('password-stdin')) {
+            $this->plainPassword = $this->readPasswordFromStdin($input);
+        }
     }
 
     /**
@@ -105,8 +117,15 @@ class AddUserCommand extends Command
      */
     protected function interact(InputInterface $input, OutputInterface $output): void
     {
-        if (null !== $input->getArgument('username') && null !== $input->getArgument('password') && null !== $input->getArgument('email') && null !== $input->getArgument('full-name')) {
+        if (null !== $input->getArgument('username') && null !== $this->plainPassword && null !== $input->getArgument('email') && null !== $input->getArgument('full-name')) {
             return;
+        }
+
+        // fail before echoing anything: with the old "username password email"
+        // syntax this argument would contain the plain password
+        $email = $input->getArgument('email');
+        if (\is_string($email)) {
+            $this->validator->validateEmail($email);
         }
 
         $this->io->title('Add User Command Interactive Wizard');
@@ -114,7 +133,7 @@ class AddUserCommand extends Command
             'If you prefer to not use this interactive wizard, provide the',
             'arguments required by this command as follows:',
             '',
-            ' $ php bin/console app:add-user username password email@example.com',
+            ' $ php bin/console app:add-user username email@example.com "Full Name" --password-stdin',
             '',
             'Now we\'ll ask you for the value of all the missing command arguments.',
         ]);
@@ -128,13 +147,13 @@ class AddUserCommand extends Command
             $input->setArgument('username', $username);
         }
 
-        // Ask for the password if it's not defined
-        $password = $input->getArgument('password');
-        if (null !== $password) {
-            $this->io->text(' > <info>Password</info>: '.u('*')->repeat(u($password)->length()));
+        // Ask for the password if it wasn't read from the standard input
+        if (null !== $this->plainPassword) {
+            $this->io->text(' > <info>Password</info>: (read from the standard input)');
         } else {
             $password = $this->io->askHidden('Password (your type will be hidden)', [$this->validator, 'validatePassword']);
-            $input->setArgument('password', $password);
+            \assert(\is_string($password));
+            $this->plainPassword = $password;
         }
 
         // Ask for the email if it's not defined
@@ -166,10 +185,14 @@ class AddUserCommand extends Command
         $stopwatch->start('add-user-command');
 
         $username = $input->getArgument('username');
-        $plainPassword = $input->getArgument('password');
+        $plainPassword = $this->plainPassword;
         $email = $input->getArgument('email');
         $fullName = $input->getArgument('full-name');
         $isAdmin = $input->getOption('admin');
+
+        if (null === $plainPassword) {
+            throw new RuntimeException('The password is required. For security reasons it is not accepted as a command-line argument: type it when asked or pipe it with the --password-stdin option.');
+        }
 
         // make sure to validate the user data is correct
         $this->validateUserData($username, $plainPassword, $email, $fullName);
@@ -196,6 +219,23 @@ class AddUserCommand extends Command
         }
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Reads the first line of the standard input (without its line ending), so
+     * the password never appears in the command line, the shell history or the
+     * process list.
+     */
+    private function readPasswordFromStdin(InputInterface $input): string
+    {
+        $stream = $input instanceof StreamableInputInterface ? $input->getStream() : null;
+        $line = fgets($stream ?? \STDIN);
+
+        if (false === $line) {
+            throw new RuntimeException('The --password-stdin option was used but no password was received on the standard input.');
+        }
+
+        return u($line)->trimEnd("\r\n")->toString();
     }
 
     private function validateUserData($username, $plainPassword, $email, $fullName): void
@@ -230,20 +270,27 @@ class AddUserCommand extends Command
         return <<<'HELP'
 The <info>%command.name%</info> command creates new users and saves them in the database:
 
-  <info>php %command.full_name%</info> <comment>username password email</comment>
+  <info>php %command.full_name%</info> <comment>username email full-name</comment>
+
+For security reasons the password is never accepted as a command-line argument
+(it would be stored in the shell history and visible in the process list). The
+command asks for it with hidden input or, in scripts, reads it from the standard
+input when the <comment>--password-stdin</comment> option is set:
+
+  <info>printf '%s\n' "$PASSWORD" | php %command.full_name%</info> username email full-name <comment>--password-stdin</comment>
 
 By default the command creates regular users. To create administrator users,
 add the <comment>--admin</comment> option:
 
-  <info>php %command.full_name%</info> username password email <comment>--admin</comment>
+  <info>php %command.full_name%</info> username email full-name <comment>--admin</comment>
 
-If you omit any of the three required arguments, the command will ask you to
+If you omit any of the required arguments, the command will ask you to
 provide the missing values:
 
-  # command will ask you for the email
-  <info>php %command.full_name%</info> <comment>username password</comment>
+  # command will ask you for the password and the full name
+  <info>php %command.full_name%</info> <comment>username email</comment>
 
-  # command will ask you for the email and password
+  # command will ask you for the password, email and full name
   <info>php %command.full_name%</info> <comment>username</comment>
 
   # command will ask you for all arguments
