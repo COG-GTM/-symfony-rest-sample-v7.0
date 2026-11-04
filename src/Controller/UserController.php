@@ -20,6 +20,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 
 /**
  * Controller used to manage current user.
@@ -52,7 +53,7 @@ class UserController extends AbstractController
     }
 
     #[Route('/change-password', methods: ['GET', 'POST'], name: 'user_change_password')]
-    public function changePassword(Request $request, UserPasswordHasherInterface $passwordHasher, EntityManagerInterface $entityManager): Response
+    public function changePassword(Request $request, UserPasswordHasherInterface $passwordHasher, EntityManagerInterface $entityManager, CsrfTokenManagerInterface $csrfTokenManager): Response
     {
         $user = $this->getUser();
 
@@ -63,7 +64,11 @@ class UserController extends AbstractController
             $user->setPassword($passwordHasher->hashPassword($user, $form->get('newPassword')->getData()));
             $entityManager->flush();
 
-            return $this->redirectToRoute('security_logout');
+            // logout is CSRF-protected (see config/packages/security.yaml), so the
+            // redirect must carry the same token that logout_path() would generate
+            return $this->redirectToRoute('security_logout', [
+                '_csrf_token' => $csrfTokenManager->getToken('logout')->getValue(),
+            ]);
         }
 
         return $this->render('user/change_password.html.twig', [

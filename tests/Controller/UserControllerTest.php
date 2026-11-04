@@ -11,6 +11,7 @@
 
 namespace App\Tests\Controller;
 
+use App\Entity\User;
 use App\Repository\UserRepository;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
@@ -68,7 +69,7 @@ class UserControllerTest extends WebTestCase
 
         $this->assertResponseRedirects('/en/profile/edit', Response::HTTP_FOUND);
 
-        /** @var \App\Entity\User $user */
+        /** @var User $user */
         $user = static::getContainer()->get(UserRepository::class)->findOneByEmail($newUserEmail);
 
         $this->assertNotNull($user);
@@ -90,10 +91,61 @@ class UserControllerTest extends WebTestCase
             'change_password[newPassword][second]' => $newUserPassword,
         ]);
 
-        $this->assertResponseRedirects(
-            '/en/logout',
-            Response::HTTP_FOUND,
-            'Changing password logout the user.'
+        $this->assertResponseStatusCodeSame(Response::HTTP_FOUND, 'Changing password logout the user.');
+        $this->assertStringStartsWith(
+            '/en/logout?_csrf_token=',
+            (string) $client->getResponse()->headers->get('Location'),
+            'Changing password redirects to the CSRF-protected logout URL.'
         );
+    }
+
+    public function testLogoutWithoutCsrfTokenKeepsUserLoggedIn(): void
+    {
+        $client = static::createClient();
+        $client->loginUser($this->getUser('jane_admin'));
+
+        $client->request('GET', '/en/logout');
+        $this->assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
+
+        $client->request('GET', '/en/profile/edit');
+        $this->assertResponseIsSuccessful('The user is still logged in after a logout request without CSRF token.');
+    }
+
+    public function testLogoutWithInvalidCsrfTokenKeepsUserLoggedIn(): void
+    {
+        $client = static::createClient();
+        $client->loginUser($this->getUser('jane_admin'));
+
+        $client->request('GET', '/en/logout?_csrf_token=invalid');
+        $this->assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
+
+        $client->request('GET', '/en/profile/edit');
+        $this->assertResponseIsSuccessful('The user is still logged in after a logout request with an invalid CSRF token.');
+    }
+
+    public function testLogoutLinkWithCsrfTokenLogsUserOut(): void
+    {
+        $client = static::createClient();
+        $client->loginUser($this->getUser('jane_admin'));
+
+        $crawler = $client->request('GET', '/en/profile/edit');
+        $logoutUrl = (string) $crawler->filter('a[href*="/logout"]')->attr('href');
+        $this->assertStringContainsString('_csrf_token=', $logoutUrl, 'The logout link carries a CSRF token.');
+
+        $client->request('GET', $logoutUrl);
+        $this->assertResponseRedirects();
+
+        $client->request('GET', '/en/profile/edit');
+        $this->assertResponseRedirects('http://localhost/en/login', Response::HTTP_FOUND, 'The user is logged out.');
+    }
+
+    private function getUser(string $username): User
+    {
+        /** @var UserRepository $repository */
+        $repository = static::getContainer()->get(UserRepository::class);
+        /** @var User $user */
+        $user = $repository->findOneBy(['username' => $username]);
+
+        return $user;
     }
 }
