@@ -75,6 +75,25 @@ class SecurityControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
     }
 
+    public function testRepeatedFailedLoginsAreThrottled(): void
+    {
+        $client = static::createClient();
+        // keep the same kernel (and its in-memory rate limiter storage) across requests
+        $client->disableReboot();
+
+        for ($i = 0; $i < 5; ++$i) {
+            $this->submitLoginForm($client, 'jane_admin', 'wrong-password-'.$i);
+            $client->followRedirect();
+            $this->assertSelectorTextNotContains('.alert-danger', 'Too many failed login attempts');
+        }
+
+        // the correct password is refused once the limit is reached
+        $this->submitLoginForm($client, 'jane_admin', $_SERVER['APP_FIXTURES_PASSWORD']);
+        $this->assertResponseRedirects('http://localhost/en/login', Response::HTTP_FOUND);
+        $client->followRedirect();
+        $this->assertSelectorTextContains('.alert-danger', 'Too many failed login attempts');
+    }
+
     /**
      * @return \Generator<int, array{string}>
      */
