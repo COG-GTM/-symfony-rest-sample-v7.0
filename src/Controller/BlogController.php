@@ -15,8 +15,10 @@ use App\Entity\Comment;
 use App\Entity\Post;
 use App\Event\CommentCreatedEvent;
 use App\Form\CommentType;
+use App\Pagination\Paginator;
 use App\Repository\PostRepository;
 use App\Repository\TagRepository;
+use App\Security\PostVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Cache;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
@@ -82,6 +84,8 @@ class BlogController extends AbstractController
         //
         // dump($post, $this->getUser(), new \DateTime());
 
+        $this->denyAccessUnlessPublished($post);
+
         return $this->render('blog/post_show.html.twig', ['post' => $post]);
     }
 
@@ -96,6 +100,8 @@ class BlogController extends AbstractController
     #[ParamConverter('post', options: ['mapping' => ['postSlug' => 'slug']])]
     public function commentNew(Request $request, Post $post, EventDispatcherInterface $eventDispatcher, EntityManagerInterface $entityManager): Response
     {
+        $this->denyAccessUnlessPublished($post);
+
         $comment = new Comment();
         $comment->setAuthor($this->getUser());
         $post->addComment($comment);
@@ -133,6 +139,8 @@ class BlogController extends AbstractController
      */
     public function commentForm(Post $post): Response
     {
+        $this->denyAccessUnlessPublished($post);
+
         $form = $this->createForm(CommentType::class);
 
         return $this->render('blog/_comment_form.html.twig', [
@@ -145,7 +153,7 @@ class BlogController extends AbstractController
     public function search(Request $request, PostRepository $posts): Response
     {
         $query = $request->query->get('q', '');
-        $limit = $request->query->get('l', 10);
+        $limit = filter_var($request->query->get('l'), \FILTER_VALIDATE_INT, ['options' => ['default' => Paginator::PAGE_SIZE]]);
 
         if (!$request->isXmlHttpRequest()) {
             return $this->render('blog/search.html.twig', ['query' => $query]);
@@ -165,5 +173,15 @@ class BlogController extends AbstractController
         }
 
         return $this->json($results);
+    }
+
+    /**
+     * Scheduled posts (published in the future) are only visible to their author.
+     */
+    private function denyAccessUnlessPublished(Post $post): void
+    {
+        if (!$post->isPublished() && !$this->isGranted(PostVoter::SHOW, $post)) {
+            throw $this->createNotFoundException();
+        }
     }
 }
