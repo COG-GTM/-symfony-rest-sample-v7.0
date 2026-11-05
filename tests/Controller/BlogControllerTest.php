@@ -128,7 +128,7 @@ class BlogControllerTest extends WebTestCase
             $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => $query, 'l' => '-1']);
 
             $this->assertResponseIsSuccessful();
-            $this->assertSame([], json_decode((string) $client->getResponse()->getContent(), true), sprintf('"%s" must not match every post.', $query));
+            $this->assertSame([], json_decode((string) $client->getResponse()->getContent(), true), \sprintf('"%s" must not match every post.', $query));
         }
     }
 
