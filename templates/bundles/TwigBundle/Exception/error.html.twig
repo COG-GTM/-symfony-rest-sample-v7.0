@@ -22,11 +22,3 @@
         {{ 'http_error.suggestion'|trans({ '%url%': path('blog_index') })|raw }}
     </p>
 {% endblock %}
-
-{% block sidebar %}
-    {{ parent() }}
-
-    {% if app.debug %}
-        {{ show_source_code(_self) }}
-    {% endif %}
-{% endblock %}
