@@ -15,10 +15,10 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: "Checkout code"
-              uses: actions/checkout@v2
+              uses: actions/checkout@v4
 
             - name: PHP-CS-Fixer
-              uses: docker://oskarstark/php-cs-fixer-ga
+              uses: docker://oskarstark/php-cs-fixer-ga:3.4.0
               with:
                   args: --diff --dry-run
 
@@ -31,22 +31,23 @@ jobs:
 
         steps:
             - name: "Checkout code"
-              uses: actions/checkout@v2.3.3
+              uses: actions/checkout@v4
 
             - name: "Install PHP with extensions"
-              uses: shivammathur/setup-php@2.7.0
+              uses: shivammathur/setup-php@v2
               with:
                   coverage: "none"
                   extensions: intl
                   php-version: ${{ matrix.php-version }}
-                  tools: composer:v2
+                  tools: composer:2.2
 
             - name: "Set composer cache directory"
               id: composer-cache
-              run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+              shell: bash
+              run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
 
             - name: "Cache composer"
-              uses: actions/cache@v2.1.2
+              uses: actions/cache@v4
               with:
                   path: ${{ steps.composer-cache.outputs.dir }}
                   key: ${{ runner.os }}-${{ matrix.php-version }}-composer-${{ hashFiles('composer.lock') }}
@@ -89,7 +90,9 @@ jobs:
 
             - name: Check if any dependencies are compromised
               if: always() && steps.install.outcome == 'success'
-              run: /home/runner/.symfony/bin/symfony check:security
+              run: |
+                  export PATH="$HOME/.symfony5/bin:$HOME/.symfony/bin:$PATH"
+                  symfony check:security
 
             - name: Run PHPStan
               if: always() && steps.install.outcome == 'success'

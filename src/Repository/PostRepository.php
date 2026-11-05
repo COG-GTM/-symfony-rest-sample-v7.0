@@ -30,6 +30,10 @@ use function Symfony\Component\String\u;
  */
 class PostRepository extends ServiceEntityRepository
 {
+    public const MAX_SEARCH_RESULTS = 50;
+    public const MAX_SEARCH_TERMS = 10;
+    public const MAX_SEARCH_QUERY_LENGTH = 100;
+
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Post::class);
@@ -69,14 +73,14 @@ class PostRepository extends ServiceEntityRepository
 
         foreach ($searchTerms as $key => $term) {
             $queryBuilder
-                ->orWhere('p.title LIKE :t_'.$key)
-                ->setParameter('t_'.$key, '%'.$term.'%')
+                ->orWhere('p.title LIKE :t_'.$key." ESCAPE '!'")
+                ->setParameter('t_'.$key, '%'.strtr((string) $term, ['!' => '!!', '%' => '!%', '_' => '!_']).'%')
             ;
         }
 
         return $queryBuilder
             ->orderBy('p.publishedAt', 'DESC')
-            ->setMaxResults($limit)
+            ->setMaxResults(max(1, min(self::MAX_SEARCH_RESULTS, $limit)))
             ->getQuery()
             ->getResult();
     }
@@ -86,12 +90,14 @@ class PostRepository extends ServiceEntityRepository
      */
     private function extractSearchTerms(string $searchQuery): array
     {
-        $searchQuery = u($searchQuery)->replaceMatches('/[[:space:]]+/', ' ')->trim();
+        $searchQuery = u(mb_substr($searchQuery, 0, self::MAX_SEARCH_QUERY_LENGTH, 'UTF-8'))->replaceMatches('/[[:space:]]+/', ' ')->trim();
         $terms = array_unique($searchQuery->split(' '));
 
         // ignore the search terms that are too short
-        return array_filter($terms, static function ($term) {
+        $terms = array_filter($terms, static function ($term) {
             return 2 <= $term->length();
         });
+
+        return \array_slice($terms, 0, self::MAX_SEARCH_TERMS);
     }
 }
