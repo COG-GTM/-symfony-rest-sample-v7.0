@@ -15,6 +15,7 @@ use App\Entity\Comment;
 use App\Entity\Post;
 use App\Event\CommentCreatedEvent;
 use App\Form\CommentType;
+use App\Pagination\Paginator;
 use App\Repository\PostRepository;
 use App\Repository\TagRepository;
 use App\Security\PostVoter;
@@ -152,7 +153,7 @@ class BlogController extends AbstractController
     public function search(Request $request, PostRepository $posts): Response
     {
         $query = $request->query->get('q', '');
-        $limit = $request->query->get('l', 10);
+        $limit = filter_var($request->query->get('l'), \FILTER_VALIDATE_INT, ['options' => ['default' => Paginator::PAGE_SIZE]]);
 
         if (!$request->isXmlHttpRequest()) {
             return $this->render('blog/search.html.twig', ['query' => $query]);

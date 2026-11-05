@@ -120,6 +120,34 @@ class BlogControllerTest extends WebTestCase
         $this->assertSame([], json_decode((string) $client->getResponse()->getContent(), true));
     }
 
+    public function testAjaxSearchTreatsLikeWildcardsLiterally(): void
+    {
+        $client = static::createClient();
+
+        foreach (['%%', '__', '%_'] as $query) {
+            $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => $query, 'l' => '-1']);
+
+            $this->assertResponseIsSuccessful();
+            $this->assertSame([], json_decode((string) $client->getResponse()->getContent(), true), sprintf('"%s" must not match every post.', $query));
+        }
+    }
+
+    public function testAjaxSearchLimitIsBounded(): void
+    {
+        $client = static::createClient();
+
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => 'lorem pellentesque', 'l' => '-1']);
+        /** @var array<mixed> $results */
+        $results = json_decode((string) $client->getResponse()->getContent(), true);
+        $this->assertCount(1, $results);
+
+        $client->xmlHttpRequest('GET', '/en/blog/search', ['q' => 'lorem pellentesque', 'l' => 'abc']);
+        $this->assertResponseIsSuccessful();
+        /** @var array<mixed> $results */
+        $results = json_decode((string) $client->getResponse()->getContent(), true);
+        $this->assertCount(3, $results);
+    }
+
     public function testScheduledPostIsNotFoundForAnonymousUsers(): void
     {
         $client = static::createClient();

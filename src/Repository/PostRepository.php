@@ -30,6 +30,8 @@ use function Symfony\Component\String\u;
  */
 class PostRepository extends ServiceEntityRepository
 {
+    public const MAX_SEARCH_RESULTS = 50;
+
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Post::class);
@@ -69,8 +71,8 @@ class PostRepository extends ServiceEntityRepository
         $titleMatches = $queryBuilder->expr()->orX();
 
         foreach ($searchTerms as $key => $term) {
-            $titleMatches->add('p.title LIKE :t_'.$key);
-            $queryBuilder->setParameter('t_'.$key, '%'.$term.'%');
+            $titleMatches->add('p.title LIKE :t_'.$key." ESCAPE '!'");
+            $queryBuilder->setParameter('t_'.$key, '%'.strtr((string) $term, ['!' => '!!', '%' => '!%', '_' => '!_']).'%');
         }
 
         return $queryBuilder
@@ -78,7 +80,7 @@ class PostRepository extends ServiceEntityRepository
             ->andWhere('p.publishedAt <= :now')
             ->setParameter('now', new \DateTime())
             ->orderBy('p.publishedAt', 'DESC')
-            ->setMaxResults($limit)
+            ->setMaxResults(max(1, min(self::MAX_SEARCH_RESULTS, $limit)))
             ->getQuery()
             ->getResult();
     }
