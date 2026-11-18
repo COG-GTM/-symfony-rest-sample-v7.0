@@ -1,0 +1,85 @@
+// Architecture of the Symfony Demo application on branch pr/1284.
+// Edit this file, then run ./render.sh to regenerate architecture.png and architecture.svg.
+digraph architecture {
+    graph [rankdir=TB, fontname="DejaVu Sans", fontsize=18, nodesep=0.3, ranksep=0.55,
+           pad=0.3, newrank=true, compound=true, label="Symfony Demo application (pr/1284): request, data and asset flow", labelloc=t];
+    node  [shape=box, style="rounded,filled", fillcolor=white, fontname="DejaVu Sans", fontsize=16, margin="0.18,0.08"];
+    edge  [fontname="DejaVu Sans", fontsize=13, color="#555555"];
+
+    browser [label="Browser\nvisitor / john_user / jane_admin", shape=oval, fillcolor="#fff3cd"];
+    cli     [label="Terminal\nbin/console", shape=oval, fillcolor="#fff3cd"];
+
+    subgraph cluster_front {
+        label="Frontend build (Webpack Encore)"; style="rounded,dashed"; color="#6c757d";
+        assets  [label="assets/\napp.js, admin.js, search.js\nStimulus: login-controller.js\nSCSS (Bootstrap 3)", fillcolor="#e7f1ff"];
+        build   [label="public/build/\nentrypoints.json + hashed\nJS/CSS (yarn build)", fillcolor="#e7f1ff"];
+    }
+
+    subgraph cluster_http {
+        label="HTTP request pipeline"; style="rounded"; color="#0d6efd";
+        front   [label="public/index.php\nSymfony Runtime -> App\\Kernel", fillcolor="#dbe9ff"];
+        subs    [label="Kernel event subscribers\nRedirectToPreferredLocale (request)\nController -> SourceCodeExtension\nCheckRequirements (exception)", fillcolor="#dbe9ff"];
+        fw      [label="Security firewall 'main'\nform_login + CSRF, logout\n/{_locale}/admin requires ROLE_ADMIN", fillcolor="#dbe9ff"];
+        router  [label="Router: every route under /{_locale}\n(25 locales, default en)", fillcolor="#dbe9ff"];
+        { rank=same; front; subs; fw; router; }
+    }
+
+    subgraph cluster_app {
+        label="Application code (src/)"; style="rounded"; color="#198754";
+        homepage [label="homepage\nTemplateController", fillcolor="#d1e7dd"];
+        blog     [label="BlogController /blog\nindex, rss.xml, posts/{slug},\ncomment/{postSlug}/new, search", fillcolor="#d1e7dd"];
+        sec      [label="SecurityController\n/login, /logout", fillcolor="#d1e7dd"];
+        user     [label="UserController /profile\nedit, change-password\n(ROLE_USER)", fillcolor="#d1e7dd"];
+        admin    [label="Admin\\BlogController /admin/post\nindex, new, show, edit, delete\n(ROLE_ADMIN)", fillcolor="#d1e7dd"];
+        voter    [label="PostVoter\nshow / edit / delete\nonly the post's author", fillcolor="#d1e7dd"];
+        forms    [label="Forms\nPostType, CommentType, UserType,\nChangePasswordType, TagsInputType", fillcolor="#d1e7dd"];
+        commands [label="Console commands\napp:add-user, app:delete-user,\napp:list-users [--send-to]", fillcolor="#d1e7dd"];
+        event    [label="CommentCreatedEvent ->\nCommentNotificationSubscriber", fillcolor="#d1e7dd"];
+        repos    [label="Repositories\nPostRepository (findLatest, search,\nPaginator 10/page), TagRepository,\nUserRepository", fillcolor="#d1e7dd"];
+    }
+
+    subgraph cluster_view {
+        label="Views"; style="rounded"; color="#6f42c1";
+        twig    [label="Twig templates/\nmarkdown_to_html | sanitize_html\nAppExtension, SourceCodeExtension\nencore_entry_*_tags", fillcolor="#e9e0f7"];
+        i18n    [label="translations/\nXLIFF (ICU) per locale", fillcolor="#e9e0f7"];
+    }
+
+    subgraph cluster_data {
+        label="Persistence and side effects"; style="rounded"; color="#dc3545";
+        orm     [label="Doctrine ORM (annotations)\nPost, Comment, Tag, User", fillcolor="#f8d7da"];
+        sqlite  [label="SQLite\ndata/database.sqlite\n(test: database_test.sqlite)", shape=cylinder, fillcolor="#f8d7da"];
+        mailer  [label="Symfony Mailer\nMAILER_DSN (null:// in dev/test)", fillcolor="#f8d7da"];
+    }
+
+    { rank=same; browser; cli; }
+    browser -> front [label="HTTP"];
+    front -> subs -> fw -> router;
+    router -> homepage;
+    router -> blog;
+    router -> sec;
+    router -> user;
+    router -> admin;
+    admin -> voter [label="IsGranted"];
+    blog -> forms;
+    user -> forms;
+    admin -> forms;
+    blog -> event [label="new comment"];
+    event -> mailer [label="email post author"];
+    blog -> repos;
+    admin -> repos;
+    repos -> orm;
+    user -> orm;
+    orm -> sqlite;
+    commands -> orm;
+    commands -> mailer [style=dashed];
+    cli -> commands;
+    homepage -> twig;
+    blog -> twig;
+    admin -> twig;
+    twig -> i18n [style=dashed];
+    twig -> build [label="script/link tags", style=dashed];
+    assets -> build [label="yarn build"];
+    build -> browser [label="static files", style=dashed];
+    forms -> twig [style=invis];
+    i18n -> assets [style=invis];
+}
