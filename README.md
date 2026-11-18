@@ -23,7 +23,7 @@ Clone this repository and install the PHP and JavaScript dependencies:
 
 ```bash
 $ git clone https://github.com/COG-GTM/-symfony-rest-sample-v7.0.git
-$ cd -symfony-rest-sample-v7.0/
+$ cd ./-symfony-rest-sample-v7.0/
 $ composer install
 $ yarn install
 $ yarn build
