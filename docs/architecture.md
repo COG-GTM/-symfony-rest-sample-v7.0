@@ -3,8 +3,9 @@
 This document describes what the code on the `pr/1284` branch does today: a
 server-rendered Symfony 6.0 blog (the Symfony Demo application) with a public
 blog, a user profile area and an admin back office, backed by SQLite through
-Doctrine ORM. There is no JSON/REST API; every route renders Twig HTML, except
-the RSS feed (`/blog/rss.xml`).
+Doctrine ORM. There is no REST API: routes render Twig HTML, except the RSS
+feed (`/blog/rss.xml`) and `blog_search`, which returns JSON results to the
+instant search when called as an XMLHttpRequest.
 
 ![Architecture diagram](diagrams/architecture.png)
 
@@ -103,7 +104,9 @@ Webpack Encore (`webpack.config.js`) builds three entries from `assets/` into
   lazy-loads `assets/controllers/login-controller.js` (fills the demo
   credentials and toggles password visibility on the login page).
 - `admin` (`assets/admin.js`): date-time picker and typeahead tag input.
-- `search` (`assets/search.js`): instant search on the search page.
+- `search` (`assets/search.js`): instant search on the search page; it calls
+  `blog_search` with `X-Requested-With: XMLHttpRequest` and renders the JSON
+  results.
 
 Templates include them with `encore_entry_link_tags()` /
 `encore_entry_script_tags()`, which read `public/build/entrypoints.json`.
