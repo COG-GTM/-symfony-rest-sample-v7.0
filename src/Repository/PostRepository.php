@@ -13,6 +13,7 @@ namespace App\Repository;
 
 use App\Entity\Post;
 use App\Entity\Tag;
+use App\Entity\User;
 use App\Pagination\Paginator;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -52,6 +53,27 @@ class PostRepository extends ServiceEntityRepository
         }
 
         return (new Paginator($qb))->paginate($page);
+    }
+
+    /**
+     * Returns only the columns the backend post list renders, so the post
+     * contents are not loaded and no Post entities are hydrated.
+     *
+     * @return array<array{id: int, title: string, publishedAt: \DateTime}>
+     */
+    public function findForAdminList(User $author): array
+    {
+        /** @var array<array{id: int, title: string, publishedAt: \DateTime}> $posts */
+        $posts = $this->createQueryBuilder('p')
+            ->select('p.id', 'p.title', 'p.publishedAt')
+            ->where('p.author = :author')
+            ->orderBy('p.publishedAt', 'DESC')
+            ->setParameter('author', $author)
+            ->getQuery()
+            ->getArrayResult()
+        ;
+
+        return $posts;
     }
 
     /**

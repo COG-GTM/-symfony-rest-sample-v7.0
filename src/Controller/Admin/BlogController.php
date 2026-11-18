@@ -12,6 +12,7 @@
 namespace App\Controller\Admin;
 
 use App\Entity\Post;
+use App\Entity\User;
 use App\Form\PostType;
 use App\Repository\PostRepository;
 use App\Security\PostVoter;
@@ -55,7 +56,9 @@ class BlogController extends AbstractController
     ]
     public function index(PostRepository $posts): Response
     {
-        $authorPosts = $posts->findBy(['author' => $this->getUser()], ['publishedAt' => 'DESC']);
+        /** @var User $user */
+        $user = $this->getUser();
+        $authorPosts = $posts->findForAdminList($user);
 
         return $this->render('admin/blog/index.html.twig', ['posts' => $authorPosts]);
     }
